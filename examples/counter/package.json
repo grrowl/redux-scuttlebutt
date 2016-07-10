@@ -1,0 +1,47 @@
+{
+  "name": "redux-scuttlebutt-counter",
+  "version": "0.0.1-alpha",
+  "description": "redux-scuttlebutt counter example",
+  "scripts": {
+    "start": "node server",
+    "test": "NODE_ENV=test mocha --recursive --compilers js:babel-register",
+    "test:watch": "npm test -- --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/grrowl/redux-scuttlebutt.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/grrowl/redux-scuttlebutt/issues"
+  },
+  "homepage": "https://github.com/grrowl/redux-scuttlebutt",
+  "dependencies": {
+    "babel-preset-stage-0": "^6.5.0",
+    "primus": "^5.2.2",
+    "react": "^0.14.7",
+    "react-dom": "^0.14.7",
+    "react-redux": "^4.2.1",
+    "recompose": "^0.20.2",
+    "redux": "^3.2.1",
+    "redux-scuttlebutt": "grrowl/redux-scuttlebutt#0.0.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-core": "^6.3.15",
+    "babel-loader": "^6.2.0",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-react": "^6.3.13",
+    "babel-preset-react-hmre": "^1.1.1",
+    "babel-register": "^6.9.0",
+    "enzyme": "^2.0.0",
+    "expect": "^1.6.0",
+    "express": "^4.13.3",
+    "mocha": "^2.2.5",
+    "node-libs-browser": "^0.5.2",
+    "react-addons-test-utils": "^0.14.7",
+    "webpack": "^1.9.11",
+    "webpack-dev-middleware": "^1.2.0",
+    "webpack-hot-middleware": "^2.9.1"
+  }
+}
