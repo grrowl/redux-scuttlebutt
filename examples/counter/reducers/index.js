@@ -2,7 +2,7 @@ import { combineReducers } from 'redux'
 
 export default combineReducers({
   counter,
-  io
+  log
 })
 
 export function counter(state = 0, action) {
@@ -18,14 +18,6 @@ export function counter(state = 0, action) {
   }
 }
 
-export function io(state = { log: [] }, action) {
-  return {
-    ...state,
-    log: [
-      ...state.log,
-      action
-    ]
-  }
-
-  return state
+export function log(state = [], action) {
+  return state.concat(action)
 }

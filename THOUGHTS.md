@@ -1,5 +1,22 @@
 
-------------------------------
+also this was fascinating:
+[fault-tolerant broadcast and eventual consistency](http://courses.cs.washington.edu/courses/cse552/97wi/Papers/Isis/html/sld032.htm)
+
+## thoughts on redux-scuttlebutt without scuttlebutt
+
+if you'll only ever connect with one peer, you can do away with scuttlebutt and
+simply ensure action order by timestamp (or better,
+[Lamport Timestamps](https://en.wikipedia.org/wiki/Lamport_timestamps)). Server
+has the same job (sans scuttlebutt) of basically reflecting actions as they come
+in[1], and the clients themselves ensure order. you would still need clever
+reconsiliation aside from FWW, i'd think.
+
+1. and potentially running its own reducer to ensure it doesn't pass on actions
+  leading to an invalid state.
+  although wouldn't this lead to very racy conditions where the earlier actions
+  are strongly favoured? if a action chain is valid, and an old message comes in
+  which was perfectly valid at the time would be more likely to be invalid due
+  to the actions /afterward/
 
 ## thoughts on rewinding redux store
 

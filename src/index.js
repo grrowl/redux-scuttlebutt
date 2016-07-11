@@ -1,27 +1,59 @@
 const Primus = window.Primus
-import Dispatcher from './dispatcher'
+import Dispatcher, { REWIND_ACTION } from './dispatcher'
 
-export default (options = {}) => (store) => {
-  // initialise network io
+// Store enhancer
+// Wraps createStore to inject our history reducer
+export default function scuttlebutt(options = null) {
+  return (createStore) => {
+    // is it more efficient to store previous states, or replay a bunch of
+    // previous actions? (until we have COMMIT checkpointing, the former)
+    const history = { state: [] },
+      gossip = connectGossip(new Dispatcher())
+
+    return (reducer, preloadedState, enhancer) => {
+      const store = createStore(gossip.wrapReducer(reducer), preloadedState, enhancer)
+
+      return {
+        ...store,
+        dispatch: gossip.dispatch(store.dispatch)
+      }
+    }
+  }
+}
+
+// initialise network io
+function connectGossip(scuttlebutt) {
+  const io = Primus.connect('http://localhost:3000')
+
   console.log('[io] connecting...')
 
-  const ioOptions = {},
-    io = Primus.connect('http://localhost:3000', ioOptions),
-    gossip = new Dispatcher(),
-    gossipStream = gossip.createStream(),
-    history = { actions: [], state: [] }
+  connectStreams(io, scuttlebutt.createStream())
 
-  // the internet is a series of tubes
+  return scuttlebutt
+}
 
+// the internet is a series of tubes
+function connectStreams(io, gossip) {
+  // would love to do this. it doesn't work:
   // spark.pipe(docStream).pipe(spark)
 
+  io.on('connection', (spark) => {
+    // spark is the new connection.
+    console.log('[io] connected', spark)
+  });
+
+  io.on('disconnection', (spark) => {
+    // spark is the new disconnection.
+    console.log('[io] disconnected', spark)
+  });
+
   io.on('data', function message(data) {
-    // console.log('[io] <-', data)
-    gossipStream.write(data)
+    console.log('[io] <-', data)
+    gossip.write(data)
   })
 
-  gossipStream.on('data', (data) => {
-    // console.log('[io] ->', data)
+  gossip.on('data', (data) => {
+    console.log('[io] ->', data)
     io.write(data)
   })
 
@@ -37,55 +69,42 @@ export default (options = {}) => (store) => {
 
   // store stream events
 
-  gossipStream.on('error', (error) => {
+  gossip.on('error', (error) => {
     console.warn('[gossip] error', error)
   })
 
   // handshake header recieved from a new peer. includes their id and clock info
-  gossipStream.on('header', (header) => {
+  gossip.on('header', (header) => {
     const { id, clock } = header
     console.log('[gossip] header', id)
   })
+}
 
-  // store events
 
-  gossip.on('replay', (actions) => {
-    console.log('[gossip] list was reordered', row)
-  })
+// --------------
 
-  gossip.on('action', (action, timestamp, source_id) => {
-    console.info('[gossip] recieved', action, timestamp, source_id)
+export const hey = (options = {}) => (store) => {
+  return (next) => {
+    // store events
 
-    if (source_id !== gossip.id) {
-      // this action was emitted elsewhere, so dispatch locally
 
-      // try-catch to ensure update is applied correctly.
-      // TODO: we might consider calling next() directly? is that idiomatic?
-      try {
-        store.dispatch({
-          ...action,
-          __remote: true
-        })
-      } catch(error) {
-        console.error('ERROR DISPATCHING ACTION', error)
+    return (action) => {
+
+      const nextState = next(action)
+
+      history.actions.push(action)
+      history.state.push(nextState)
+
+      if (!action.__remote) {
+        const result = gossip.localUpdate(action)
+
+        // console.log('[gossip] action status', result)
+        // console.log('[gossip] state', actions.asArray())
       }
+
+      // return next(action)
+      return nextState
     }
-  })
-
-  return (next) => (action) => {
-    const nextState = next(action)
-
-    history.actions.push(action)
-    history.state.push(nextState)
-
-    if (!action.__remote) {
-      const result = gossip.localUpdate(action)
-
-      // console.log('[gossip] action status', result)
-      // console.log('[gossip] state', actions.asArray())
-    }
-
-    // return next(action)
-    return nextState
   }
 }
+

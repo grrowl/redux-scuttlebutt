@@ -33,7 +33,7 @@ export default function App({ store: { dispatch, getState } }) {
 
       <ol reversed>
       {
-        state.io.log.reduceRight((list, log) =>
+        state.log.reduceRight((list, log) =>
           list.concat(<li><pre>{ JSON.stringify(log) }</pre></li>),
         [])
       }

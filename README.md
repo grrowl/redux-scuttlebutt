@@ -6,8 +6,6 @@ Using the power behind redux's hot reloading and time travel, your client
 dispatches actions itself and so does every other client, they share the state,
 and it all just works.
 
-currently in the experimental stage, feedback welcome.
-
 ## scuttlebutt
 
 > This seems like a silly name, but I assure you, this is real science.
@@ -62,8 +60,8 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
 
 ## contributions
 
-Contributions very welcomed. *This project is still in its very early,
-experimental stages.*
+Contributions very welcomed. **This project is still in its very early,
+experimental stages.**
 
 A major aim of this project is to be able to drop this middleware into an
 existing, compatible project and have it "just work". Additional features
@@ -71,11 +69,8 @@ existing, compatible project and have it "just work". Additional features
 redux-scuttlebutt itself without messing with the redux application's
 structure/actions/reducers
 
-also this was fascinating:
-[fault-tolerant broadcast and eventual consistency](http://courses.cs.washington.edu/courses/cse552/97wi/Papers/Isis/html/sld032.htm)
-
 ## licence
 
 MIT. Without open source projects like React, Redux, Scuttlebutt, and all the
 amazing libraries which have been an inspiration for this project, many
-wonderful things in this world wouldn't exist. So, thank you.
+wonderful things in this world wouldn't exist.

@@ -4,10 +4,10 @@ import { createStore, compose, applyMiddleware } from 'redux'
 import Counter from './components/Counter'
 import App from './components/App'
 import counter from './reducers'
-import distributed from 'redux-scuttlebutt'
+import scuttlebutt from 'redux-scuttlebutt'
 
 const store = createStore(counter, {},
-  applyMiddleware(distributed()),
+  scuttlebutt(),
   window.devToolsExtension && window.devToolsExtension()
 )
 

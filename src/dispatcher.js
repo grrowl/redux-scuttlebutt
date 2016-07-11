@@ -1,50 +1,127 @@
 import Scuttlebutt, { filter } from 'scuttlebutt'
 
+export const REWIND_ACTION = '@@scuttlebutt/REWIND'
+
+export function isGossipType(type) {
+  return type.substr(0, 1) !== '@'
+}
+
 export default class Dispatcher extends Scuttlebutt {
   constructor() {
     super()
-    const store = this._store = []
-    this._hash = {}
+
+    // history log of actions and points in time
+    this._actions = []
+
+    // dispatch to redux
+    this._reduxDispatch = a => a
+  }
+
+  // wraps the redux dispatch
+  dispatch(dispatch) {
+    this._reduxDispatch = dispatch
+
+    return (action) => {
+      if (isGossipType(action.type)) {
+        this.localUpdate(action)
+      }
+      return dispatch(action)
+    }
+  }
+
+  // rewinds history when it changes
+  wrapReducer(reducer) {
+    const states = []
+
+    // wrap the root reducer to track history and rewind occasionally
+    return (currentState, action) => {
+      if (action.type === REWIND_ACTION) {
+        // replace the whole state with the previous index provided
+        // the index here naturally matches the index in scuttlebutt._actions
+        return states[action.payload]
+      }
+
+      return states[states.push(reducer(currentState, action)) - 1]
+    }
   }
 
   // Apply update (action) to our store
+  // implemented for scuttlebutt class
   applyUpdate([action, timestamp, source]) {
     // we simply log and emit all actions, and ensure their order as we see them.
     // [[id,payload],timestamp,source_id]
-    this._store.push([action, timestamp, source])
+    this._actions.push([action, timestamp, source])
 
-    // ensure order
-    let newerTimestamp = Infinity
-    for (let i = this._store.length - 1; i >= 0; i--) {
-      const [thisAction, thisTimestamp, thisSource] = this._store[i]
+    // check where this update belongs in time
+    for (let i = this._actions.length - 1; i >= 0; i--) {
+      const [thisAction, thisTimestamp, thisSource] = this._actions[i]
 
-      if (thisTimestamp > newerTimestamp) {
+      // if this timestamp belongs here, and we're not at the end of time
+      if (thisTimestamp < thisTimestamp && i !== this._actions.length - 1) {
         // older timestamp greater than recent max
-        console.warn('out of order!!!', newerTimestamp, thisAction, thisTimestamp, thisSource)
+        console.warn('temporal shift detected', source, timestamp, '<', thisTimestamp, thisSource)
+
+        // supply the point to rewind to (history index of newerTimestamp)
+        this._reduxDispatch({
+          type: REWIND_ACTION,
+          // go back to this index in the store
+          // our _actions should match _states 1:1, for now
+          // and we'll reset to the state /before/ i-action was dispatched
+          payload: i - 1
+        })
+
+        // dispatch all the actions since this point, again
+        for (let j = i; j < this._actions.length; j++) {
+          // dispatch each following action
+          this._reduxDispatch(this._actions[j])
+        }
+
+        break
       }
+
+      // otherwise, we check all the way back to the start of time. just in case
     }
 
-    this.emit('action', action, timestamp, source)
+    // locally dispatch foreign updates
+    if (source !== this.id) {
+      // unfortunately this loses the important info of source_id and timestamp
+      // but we don't want to modify the action itself.
+      // maybe they can be added as prefixed non-enumerable properties
+      this._reduxDispatch(action)
+    }
 
     // applied successfully
     return true
   }
 
+  // gossip
+  // implemented for scuttlebutt class
   history(sources) {
-    return this._store.filter(function(update) {
+    return this._actions.filter(function(update) {
       return filter(update, sources)
     })
   }
 
+  // apply an update locally
+  // we should ensure we don't send objects which will explode JSON.parse here
+  // implemented over scuttlebutt class
   localUpdate(action) {
-    // console.log('result', this._filterUpdate(action))
-    // super.localUpdate(this._filterUpdate(action))
-    super.localUpdate(action)
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        super.localUpdate(action)
+      } catch (error) {
+        throw new Error('Scuttlebutt couldn\'t dispatch', error)
+      }
+    } else {
+      // try our luck
+      super.localUpdate(action)
+    }
   }
 
+  // super.localUpdate(this._filterUpdate(action))
   // Recurse through the value and attempt to remove unserializable objects.
   // A well-structured app won't be dispatching bad actions like this, so
-  // this might become a dev-only check
+  // this might become a dev-only check. also, it's not foolproof.
   _filterUpdate(value) {
     if (typeof value !== 'object')
       return value
@@ -59,14 +136,4 @@ export default class Dispatcher extends Scuttlebutt {
     }
     return result
   }
-
-  // Returns the internal store.
-  // Note, is in the format [[id,value],ts,source]
-  getState() {
-    return this._store
-  }
-
-  // TODO: emit 'replay'/'rewind' event when old actions come in
-
-  // TODO: garbage collect / compress actions into a single diff
 }
