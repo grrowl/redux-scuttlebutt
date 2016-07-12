@@ -46,14 +46,13 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
 ## roadmap
 
 * rewind redux state when actions arrive out of order
-  * implement history tracking
   * limit history to max `n` states, max `t` age, or network consensus age
   * recover when invalid actions sequences occur
     * `throw Error`: requires try-catch (expensive), shitty
     * if a reducer could `return false` that would be great, but might be fiddly
 * lock down socket library and allow pluggable option
 * tests
-  * simulate a distributed network with delay, ensure consistency
+  * simulate a multi-hop distributed network with delay, ensure consistency
   * ensure rewind/reordering works
   * ensure API
 * example application, something real-time, event driven, social.

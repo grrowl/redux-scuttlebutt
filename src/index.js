@@ -15,7 +15,7 @@ export default function scuttlebutt(options = null) {
 
       return {
         ...store,
-        dispatch: gossip.dispatch(store.dispatch)
+        dispatch: gossip.wrapDispatch(store.dispatch)
       }
     }
   }
@@ -36,24 +36,25 @@ function connectGossip(scuttlebutt) {
 function connectStreams(io, gossip) {
   // would love to do this. it doesn't work:
   // spark.pipe(docStream).pipe(spark)
-
-  io.on('connection', (spark) => {
-    // spark is the new connection.
-    console.log('[io] connected', spark)
-  });
-
-  io.on('disconnection', (spark) => {
-    // spark is the new disconnection.
-    console.log('[io] disconnected', spark)
-  });
+  let DEBUG_DELAY
+  if (/^#\d+/.test(window.location.hash)) {
+    DEBUG_DELAY = parseInt(window.location.hash.substr(1))
+    console.debug('delayed connection active', DEBUG_DELAY)
+  }
 
   io.on('data', function message(data) {
-    console.log('[io] <-', data)
+    // console.log('[io] <-', data)
+    if (DEBUG_DELAY) {
+      return setTimeout(() => gossip.write(data), DEBUG_DELAY)
+    }
     gossip.write(data)
   })
 
   gossip.on('data', (data) => {
-    console.log('[io] ->', data)
+    // console.log('[io] ->', data)
+    if (DEBUG_DELAY) {
+      return setTimeout(() => io.write(data), DEBUG_DELAY)
+    }
     io.write(data)
   })
 

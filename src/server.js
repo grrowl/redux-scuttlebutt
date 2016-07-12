@@ -1,6 +1,4 @@
 export default function scuttlebuttServer(server) {
-  // primus server
-
   var primusServer = new (require('primus'))(server, {}),
       Dispatcher = require('./dispatcher').default,
       gossip = new Dispatcher(),
@@ -21,7 +19,7 @@ export default function scuttlebuttServer(server) {
     });
 
     stream.on('data', (data) => {
-      console.log('[io]', spark.id, '->', data);
+      console.log('[io]', spark.id || 'origin', '->', data);
       spark.write(data)
     })
 

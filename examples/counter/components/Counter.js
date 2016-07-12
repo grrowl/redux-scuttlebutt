@@ -33,11 +33,11 @@ class Counter extends Component {
         </button>
         {' '}
         <button onClick={(ev) => onStressTest(100, ev)}>
-          Random (100x)
+          Stress test (100x)
         </button>
         {' '}
         <button onClick={(ev) => onStressTest(1000, ev)}>
-          Random (1,000x)
+          Stress test (1,000x)
         </button>
       </p>
     )

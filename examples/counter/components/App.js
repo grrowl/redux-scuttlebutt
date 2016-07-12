@@ -14,17 +14,19 @@ export default function App({ store: { dispatch, getState } }) {
           onIncrementOdd={() => dispatch({ type: 'INCREMENT_ODD' })}
           onStressTest={(amount = 1) => {
             const tick = () => dispatch({
-              type: (Math.random() > 0.5 ? 'DECREMENT' : 'INCREMENT')
+              type: (n =>
+                n > 0.8 ? 'INCREMENT_ODD' : n > 0.4 ? 'DECREMENT' : 'INCREMENT'
+              )(Math.random())
             })
 
-            // the first 20 are dispatched immediately
-            for(let i = Math.min(amount, 20); i > 0; i--) {
-              tick()
-            }
+            tick()
 
             // the remaining are dispatched over time
-            for(let i = amount - 20; i > 0; i--) {
+            for(let i = amount; i > 0; i--) {
               setTimeout(tick, i * 32)
+              if (i % 3 === 0) setTimeout(tick, i-- * 32) // fizz
+              if (i % 5 === 0) setTimeout(tick, i-- * 32) // buzz
+              if (i % 7 === 0) setTimeout(tick, i-- * 32) // freebie
             }
           }}
         />

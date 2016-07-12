@@ -2,7 +2,9 @@ import Scuttlebutt, { filter } from 'scuttlebutt'
 
 export const REWIND_ACTION = '@@scuttlebutt/REWIND'
 
-export function isGossipType(type) {
+// ignore actiontypes beginning with @
+// by default just pass through missing types (redux will blow up later)
+export function isGossipType(type = '') {
   return type.substr(0, 1) !== '@'
 }
 
@@ -18,7 +20,7 @@ export default class Dispatcher extends Scuttlebutt {
   }
 
   // wraps the redux dispatch
-  dispatch(dispatch) {
+  wrapDispatch(dispatch) {
     this._reduxDispatch = dispatch
 
     return (action) => {
@@ -41,7 +43,13 @@ export default class Dispatcher extends Scuttlebutt {
         return states[action.payload]
       }
 
-      return states[states.push(reducer(currentState, action)) - 1]
+      // ignore private action types. they'll still affect history, but it's
+      // not important to us that it happened
+      if (isGossipType(action.type)) {
+        return states[states.push(reducer(currentState, action)) - 1]
+      }
+
+      return reducer(currentState, action)
     }
   }
 
@@ -57,9 +65,10 @@ export default class Dispatcher extends Scuttlebutt {
       const [thisAction, thisTimestamp, thisSource] = this._actions[i]
 
       // if this timestamp belongs here, and we're not at the end of time
-      if (thisTimestamp < thisTimestamp && i !== this._actions.length - 1) {
+      if (timestamp < thisTimestamp && i !== this._actions.length - 1) {
         // older timestamp greater than recent max
         console.warn('temporal shift detected', source, timestamp, '<', thisTimestamp, thisSource)
+        break //
 
         // supply the point to rewind to (history index of newerTimestamp)
         this._reduxDispatch({
@@ -70,12 +79,19 @@ export default class Dispatcher extends Scuttlebutt {
           payload: i - 1
         })
 
-        // dispatch all the actions since this point, again
-        for (let j = i; j < this._actions.length; j++) {
-          // dispatch each following action
-          this._reduxDispatch(this._actions[j])
+        try {
+          // dispatch all the actions since this point, again
+          for (let j = i; j < this._actions.length; j++) {
+            // dispatch each following action
+            this._reduxDispatch(this._actions[j])
+          }
+        } catch (error) {
+          // if anything bad happens, it was probably not meant to be.
+          console.warn('uhh, we messed with time and it went badly. the store is probably fucked. sorry.')
+          return false
         }
 
+        // otherwise, it all went smoothly
         break
       }
 
