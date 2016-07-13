@@ -19,6 +19,9 @@ app.use(webpackHotMiddleware(compiler))
 app.get("/", function(req, res) {
   res.sendFile(__dirname + '/index.html')
 })
+app.get("/multiple", function(req, res) {
+  res.sendFile(__dirname + '/multiple.html')
+})
 
 dispatcher(server)
 

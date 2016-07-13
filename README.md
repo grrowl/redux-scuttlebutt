@@ -1,19 +1,25 @@
 
 # redux-scuttlebutt
 
+<!--
 Self-replicating, self-ordering log of actions shared between all clients.
 Using the power behind redux's hot reloading and time travel, your client
 dispatches actions itself and so does every other client, they share the state,
 and it all just works.
+-->
 
 ## scuttlebutt
 
 > This seems like a silly name, but I assure you, this is real science.
 > — [dominictarr/scuttlebutt](https://github.com/dominictarr/scuttlebutt)
 
-Efficient peer to peer ordered log reconciliation. We use it as the underlying
-protocol to achieve all peers reaching eventual consistency in their action
-histories, by reordering the action history of your Redux store as needed.
+Efficient peer to peer reconciliation. We use it as the underlying
+protocol to share dispatched redux actions among peers, and eventually agree on
+their order in time. As actions from the past arrive, we replay history as if
+they had always existed.
+
+A sample "server" peer is included, which might sync changes to a database,
+write a persistent log, or dispatch npc/system actions.
 
 While it works great in a client-server set up, you could upgrade/downgrade to
 peer-to-peer connections, or go offline, and changes sync when you next connect.
@@ -28,8 +34,7 @@ For more, read the
 
 ## dispatcher
 
-This is our Scuttlebutt model. You `.localUpdate(action)`, and listen for
-`'action'` events. It deals with action synchronisation (and eventually--
+`Dispatcher` is our Scuttlebutt model. It crosses the streams of local and remote actions keeps track of alternate h alters time as it sees fit. (and eventually--
 shared checkpointing and garbage collection)
 
 ## middleware
@@ -48,8 +53,7 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
 * rewind redux state when actions arrive out of order
   * limit history to max `n` states, max `t` age, or network consensus age
   * recover when invalid actions sequences occur
-    * `throw Error`: requires try-catch (expensive), shitty
-    * if a reducer could `return false` that would be great, but might be fiddly
+    * if the root reducer `returns false` that would be great, as long we can reset to last good state and resume quickly
 * lock down socket library and allow pluggable option
 * tests
   * simulate a multi-hop distributed network with delay, ensure consistency

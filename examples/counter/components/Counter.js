@@ -32,12 +32,20 @@ class Counter extends Component {
           Increment async
         </button>
         {' '}
-        <button onClick={(ev) => onStressTest(100, ev)}>
-          Stress test (100x)
+        <button onClick={(ev) => onStressTest(25, 250, ev)}>
+          Causal (25x)
         </button>
         {' '}
-        <button onClick={(ev) => onStressTest(1000, ev)}>
-          Stress test (1,000x)
+        <button onClick={(ev) => onStressTest(1000, 250, ev)}>
+          Causal (1,000x)
+        </button>
+        {' '}
+        <button onClick={(ev) => onStressTest(100, 32, ev)}>
+          Stress (100x)
+        </button>
+        {' '}
+        <button onClick={(ev) => onStressTest(1000, 32, ev)}>
+          Stress (1,000x)
         </button>
       </p>
     )

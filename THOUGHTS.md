@@ -1,4 +1,6 @@
 
+timestamp idea: lastActionId+timedelta, can we sort reliably on this?
+
 also this was fascinating:
 [fault-tolerant broadcast and eventual consistency](http://courses.cs.washington.edu/courses/cse552/97wi/Papers/Isis/html/sld032.htm)
 

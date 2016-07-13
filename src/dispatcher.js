@@ -8,12 +8,18 @@ export function isGossipType(type = '') {
   return type.substr(0, 1) !== '@'
 }
 
+const _formatSource = (source = '????') => `${source.substr(0,2)}…${source.substr(-4,4)}`,
+  _formatTime = (time) => (new Date(time)).toJSON().substr(-10,9),
+  _formatUpdate = (action, full) => `${_formatSource(action[2])} ${_formatTime(action[1])}${full ? action[0] : '~'}`
+
 export default class Dispatcher extends Scuttlebutt {
   constructor() {
     super()
 
-    // history log of actions and points in time
-    this._actions = []
+    // history of all current updates
+    // in-recieved-order is for scuttlebutt, sorted for time travel
+    this._updates = []
+    this._sortedUpdates = []
 
     // dispatch to redux
     this._reduxDispatch = a => a
@@ -40,6 +46,8 @@ export default class Dispatcher extends Scuttlebutt {
       if (action.type === REWIND_ACTION) {
         // replace the whole state with the previous index provided
         // the index here naturally matches the index in scuttlebutt._actions
+        // return reducer(currentState, action, console.log('shouldacouldawoulda', currentState, action))
+        console.log('rewinding to state', action.payload, states[action.payload])
         return states[action.payload]
       }
 
@@ -56,46 +64,64 @@ export default class Dispatcher extends Scuttlebutt {
   // Apply update (action) to our store
   // implemented for scuttlebutt class
   applyUpdate([action, timestamp, source]) {
+    const [, lastTimestamp] = this._sortedUpdates[this._sortedUpdates.length - 1] || [, 0]
+
     // we simply log and emit all actions, and ensure their order as we see them.
     // [[id,payload],timestamp,source_id]
-    this._actions.push([action, timestamp, source])
+    this._updates.push([action, timestamp, source])
 
-    // check where this update belongs in time
-    for (let i = this._actions.length - 1; i >= 0; i--) {
-      const [thisAction, thisTimestamp, thisSource] = this._actions[i]
 
-      // if this timestamp belongs here, and we're not at the end of time
-      if (timestamp < thisTimestamp && i !== this._actions.length - 1) {
-        // older timestamp greater than recent max
-        console.warn('temporal shift detected', source, timestamp, '<', thisTimestamp, thisSource)
-        break //
+    // if newer than the newest action
+    // theoretically, timestamps should never match
+    // our local updates will always be the newest. MAYBE (clocks!)
+    console.info('applyUpdate', _formatTime(timestamp), '>', _formatTime(lastTimestamp))
+    if (timestamp > lastTimestamp || !lastTimestamp) {
+      this._sortedUpdates.push([action, timestamp, source])
+    } else {
+      // check where this update belongs in time, searching backwards
+      for (let i = this._sortedUpdates.length - 1; i >= 0; i--) {
+        const sortUpdate = this._sortedUpdates[i],
+          [sortAction, sortTimestamp, sortSource] = sortUpdate
 
-        // supply the point to rewind to (history index of newerTimestamp)
-        this._reduxDispatch({
-          type: REWIND_ACTION,
-          // go back to this index in the store
-          // our _actions should match _states 1:1, for now
-          // and we'll reset to the state /before/ i-action was dispatched
-          payload: i - 1
-        })
+        // if it's newer than this one, this is where it belongs
+        if (timestamp > sortTimestamp) {
+          // older timestamp greater than recent max
+          console.warn(`found proper location, ${
+            this._sortedUpdates.length - 1 - i
+          } away`, _formatUpdate(sortUpdate), 'then', _formatUpdate([action, timestamp, source]))
 
-        try {
-          // dispatch all the actions since this point, again
-          for (let j = i; j < this._actions.length; j++) {
-            // dispatch each following action
-            this._reduxDispatch(this._actions[j])
+          // supply the point to rewind to (history index of newerTimestamp)
+          this._sortedUpdates.splice(i + 1, 0, [action, timestamp, source])
+
+          this._reduxDispatch({
+            type: REWIND_ACTION,
+            // go back to this index in the store
+            // our _actions should match _states 1:1, for now
+            // and we'll reset to the state /before/ i-action was dispatched
+            payload: i
+          })
+
+          // now our new action
+          this._reduxDispatch(action)
+
+          try {
+            // dispatch all the actions since this point, again
+            for (let j = i + 1; j < this._updates.length; j++) {
+              // dispatch each following action
+              console.warn('replaying', j, _formatUpdate(this._updates[j]))
+              this._reduxDispatch(this._updates[j][0])
+            }
+          } catch (error) {
+            // if anything bad happens, it was probably not meant to be.
+            console.warn('uhh, we messed with time and it went badly.', error)
+            throw error
+            return false
           }
-        } catch (error) {
-          // if anything bad happens, it was probably not meant to be.
-          console.warn('uhh, we messed with time and it went badly. the store is probably fucked. sorry.')
-          return false
+
+          // otherwise, it all went smoothly
+          break
         }
-
-        // otherwise, it all went smoothly
-        break
       }
-
-      // otherwise, we check all the way back to the start of time. just in case
     }
 
     // locally dispatch foreign updates
@@ -113,7 +139,7 @@ export default class Dispatcher extends Scuttlebutt {
   // gossip
   // implemented for scuttlebutt class
   history(sources) {
-    return this._actions.filter(function(update) {
+    return this._updates.filter(function(update) {
       return filter(update, sources)
     })
   }
