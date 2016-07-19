@@ -80,32 +80,3 @@ function connectStreams(io, gossip) {
     console.log('[gossip] header', id)
   })
 }
-
-
-// --------------
-
-export const hey = (options = {}) => (store) => {
-  return (next) => {
-    // store events
-
-
-    return (action) => {
-
-      const nextState = next(action)
-
-      history.actions.push(action)
-      history.state.push(nextState)
-
-      if (!action.__remote) {
-        const result = gossip.localUpdate(action)
-
-        // console.log('[gossip] action status', result)
-        // console.log('[gossip] state', actions.asArray())
-      }
-
-      // return next(action)
-      return nextState
-    }
-  }
-}
-
