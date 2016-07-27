@@ -1,6 +1,8 @@
 const Primus = window.Primus
 import Dispatcher, { REWIND_ACTION } from './dispatcher'
 
+export { isGossipType, REWIND_ACTION } from './dispatcher'
+
 // Store enhancer
 // Wraps createStore to inject our history reducer
 export default function scuttlebutt(options = null) {

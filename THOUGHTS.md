@@ -1,8 +1,86 @@
+in the spirit of open source, here's some related thoughts. (newest first)
+
+----
+
+## extremely brief thoughts on animation
+
+Your actions, reducer, and store should only include the most basic information
+about your entities. CREATE_ENTITY at [0,0]. MOVE_BOX_IMPULSE
+
+
+## thoughts on identity action chains
+
+peers subscribe to rooms, and emit chains. scuttlebot, secure-scuttlebutt, etc.
+add a lot of stuff about identity and stuuuufff but our goals are ???
+
+create identity action. special store? pub keys and root hashes. prev hash +
+priv key -> new hash. all actions are part of a chain linked to identities,
+therefore easily attributable.
+
+in a world scenario, everything would be an Actor. to move a box, for example,
+you'd ask the box to change states, and it would in turn. actors and messages.
+you're in total control of your tiny little domain, and so are they.
+
+reducers know *how* things should act and reject actions which don't make sense,
+eg. identity with scope player emitting MOVE_BOX actions (or, WILL_ENTITY_MOVE)
+will fail in the reducer. this means we need to error-catch all remote
+dispatches to potentially reject them.
+
+root identity store, anyone can create a new one. identity -> actor (creates
+actions) -> actioncreator -> disptach -> reducer -> store/reality. each dispatch
+must include [thishash, prevhash, pubkey]. thishash = prevhash + privkey.
+following hash follows the same rules. (one to one, or many?). scopes can be
+added by an identity with the scope to do so.
+
+this will have to exist in the middleware itself, which means mutating actions
+which was something to avoid eh. we can wrap the native action in a network
+wrapper [0x,0x,0x,action] which validates. but still expose meta.identity, which
+mutates action— and we want to expose identities in state too. guh.
+
+-------
+
+on wrap reducer: add time travel reducer, add identity reducer. on applyUpdate:
+validate time order, validate identity chain, dispatch identity actions(?),
+scope/permission ~~validation~~ can happen in native reducers (maybe all this is
+additional plugin middleware) -- validation requires getState().identity.
+
+```
+action.@identity.key = pubkey at @identity.key
+action.@identity.scope = ['some_shit'] subset of @identity.scope
+action.@identity ... etc
+```
+
+if these additional checks are satisfied, the updates are commited to store
+(WILL_ENTITY_MOVE -> entity.wantVelocity)
+
+so: TimeTravelReducer, IdentityReducer.
+
+i really, really wish there was a way other than `throw Error` to do so but i
+guess it might do, other than informing our root reducer how to 'look' for
+errors 'thrown' in the reducer, which we could also do having them plug into our
+store enhancer itself.
+
+## thoughts on testing dispatcher
+
+ugh. love tests until not love tests.
+
+* out-of-order simulation
+  * clientA = dispatch every 500ms
+  * clientB = delayed 750ms, dispatch every 1000ms
+  * replay: x-0, A-500, A-1000, A-1500, B-750 @ 1750, A-2000
+  * client B's message will be inserted between A3 and A4
+  * client A will have to rewind to 1000
+
 
 timestamp idea: lastActionId+timedelta, can we sort reliably on this?
 
-also this was fascinating:
-[fault-tolerant broadcast and eventual consistency](http://courses.cs.washington.edu/courses/cse552/97wi/Papers/Isis/html/sld032.htm)
+## intermission - related reading
+
+* also this was fascinating:
+  [fault-tolerant broadcast and eventual consistency](http://courses.cs.washington.edu/courses/cse552/97wi/Papers/Isis/html/sld032.htm)
+* [Doom3 network architecture](http://fabiensanglard.net/doom3_documentation/The-DOOM-III-Network-Architecture.pdf)
+* [Efficient Reconciliation and Flow Control for Anti-Entropy Protocols](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf)
+
 
 ## thoughts on redux-scuttlebutt without scuttlebutt
 
@@ -33,6 +111,15 @@ out-of-order action is encountered:
   * and all actions which occur later, acoording to the timestamp.
 * Eventually *commit* as the application's state has been reliably propogated
   to peer(s)
+
+reducer history: [every,buttly,state]
+update history: [[every,0,0],[buttly,0,0],[action,0,0]]
+
+therefore:
+  lengths should always match (after dispatch?)
+
+- we save the state /before/ each actionable action
+- we reset to that state /before/ the new action^ and the following^ actions
 
 ### challenges: rewind and commit
 

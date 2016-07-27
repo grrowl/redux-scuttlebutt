@@ -60,6 +60,9 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
   * ensure rewind/reordering works
   * ensure API
 * example application, something real-time, event driven, social.
+* does the underlying protocol expect `_store`/`_updates` (and hence,
+  `history()`) to be in a recieved-FIFO order?
+  * if not, always store in sorted order, easier for us
 
 ## contributions
 

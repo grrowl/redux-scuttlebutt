@@ -1,8 +1,10 @@
 export default function scuttlebuttServer(server) {
-  var primusServer = new (require('primus'))(server, {}),
+  const primusServer = new (require('primus'))(server, {}),
       Dispatcher = require('./dispatcher').default,
       gossip = new Dispatcher(),
       gossipStream = gossip.createStream()
+
+  connectRedux(gossip)
 
   gossipStream.on('data', (data) => {
     console.log('[gossip]', data)
@@ -28,4 +30,14 @@ export default function scuttlebuttServer(server) {
     })
   })
 
+}
+
+function connectRedux(gossip) {
+  const Redux = require('redux'),
+    reducer = (state = [], action) => state.concat(action),
+    store = Redux.createStore(gossip.wrapReducer(reducer), undefined),
+    dispatch = gossip.wrapDispatch(store.dispatch)
+
+  // other things we might want to do ->
+  // store.subscribe(render)
 }
