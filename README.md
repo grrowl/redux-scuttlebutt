@@ -63,6 +63,8 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
 * does the underlying protocol expect `_store`/`_updates` (and hence,
   `history()`) to be in a recieved-FIFO order?
   * if not, always store in sorted order, easier for us
+* move all time-ordering responbility into `wrapReducer`, leaving `applyUpdate`
+  to try-catch and action modification (addition of `meta.@@timestamp`)
 
 ## contributions
 

@@ -4,10 +4,16 @@ import Scuttlebutt, { filter } from 'scuttlebutt'
 export const REWIND_ACTION = '@@scuttlebutt/REWIND'
 export const RESET_ACTION = '@@scuttlebutt/RESET'
 
-// update structure keys
+export const META_TIMESTAMP = '@@scuttlebutt/TIMESTAMP'
+
+// update and state history structure keys
 const UPDATE_ACTION = 0,
   UPDATE_TIMESTAMP = 1,
-  UPDATE_SOURCE = 2
+  UPDATE_SOURCE = 2,
+  // state snapshot is post-action
+  STATE_SNAPSHOT = 0,
+  STATE_ACTION = 1
+
 
 // ignore actiontypes beginning with @
 // by default just pass through missing types (redux will blow up later)
@@ -63,19 +69,39 @@ export default class Dispatcher extends Scuttlebutt {
   wrapReducer(reducer) {
     // wrap the root reducer to track history and rewind occasionally
     return (currentState, action) => {
+      if (typeof window !== 'undefined') {
+        console.groupCollapsed(`about to do ${action}`)
+        console.table(this._stateHistory)
+        console.groupEnd('about to do', action)
+      }
+
       if (action.type === REWIND_ACTION) {
         // replace the whole state with the one at the timestamp specified
 
-        // TODO: rewinding should handle timestamps of 0 / pre-time
+        /*
+        * TODO: rewinding should be able to accept timestamps of 0 / pre-time
+        */
 
         // go back until we match the timestamp
+        // rewind to -1 to "before the start of time"
         for (let i = this._stateHistory.length - 1; i >= 0; i--) {
-          if (this._stateHistory[i].timestamp <= action.payload) {
-            // remove history after this point
+          const action = this._stateHistory[i][STATE_ACTION],
+            timestamp = action && action.meta && action.meta[META_TIMESTAMP]
+
+          if (typeof window !== 'undefined')
+            console.debug(`ts ${timestamp} <= ${action.payload}? ${timestamp <= action.payload && '✅'}`)
+          else {
+            console.log(`ts ${timestamp} <= ${action.payload}? ${timestamp <= action.payload && '✅'}`)
+            console.log(`ts ${timestamp} <= ${action.payload}? ${timestamp <= action.payload && '✅'}`)
+          }
+
+          // if this state had an action
+          if (timestamp <= action.payload) {
+            // remove history after this point. ahahah how dangerous
             this._stateHistory.splice(i + 1)
 
             // return the state as of this moment
-            return this._stateHistory[action.payload]
+            return this._stateHistory[i][STATE_SNAPSHOT]
           }
         }
 
@@ -94,13 +120,10 @@ export default class Dispatcher extends Scuttlebutt {
         return reducer(currentState, action)
       }
 
-      /*
-      * FIXME: whoops i fucked this. just put it on the meta key (or better yet,
-        not at all MAYBE WHO KNOWS)
-      */
+      // add to state history in form [STATE_SNAPSHOT, STATE_ACTION]
       return this._stateHistory[this._stateHistory.push(
-        [action[ACTION_TIMESTAMP], reducer(currentState, action)]
-      ) - 1]
+        [reducer(currentState, action), action]
+      ) - 1][STATE_SNAPSHOT]
     }
 
   }
@@ -134,6 +157,8 @@ export default class Dispatcher extends Scuttlebutt {
           this._updateHistory.splice(i + 1, 0, update)
 
           // rewind to how things would have been at action time
+          // this will be the state AFTER the action of this timestamp was
+          // applied. This balances wit hthe splice (above) and replay (below)
           this._reduxDispatch(createRewindAction(timestamp))
 
           // and replay every action since then (starting with our new one)
@@ -177,136 +202,6 @@ export default class Dispatcher extends Scuttlebutt {
     }
 
     console.info('applyUpdate success', update)
-    return true
-  }
-
-  // Apply update (action) to our4 store
-  // implemented for scuttlebutt class
-  applyUpdat2e(update) {
-    const [action, timestamp, source] = update,
-      [, lastTimestamp] = this._updateHistory[this._updateHistory.length - 1] || [, 0]
-
-    // we simply log and emit all updates in the order we see them.
-    // [[id,payload],timestamp,source_id] (<-- not yet true)
-    this._updates.push(update)
-
-    // if this update is not chronologically after our latest update
-    console.log('update', timestamp, lastTimestamp, timestamp < lastTimestamp)
-    if (timestamp < lastTimestamp) {
-      // this update is out of order. we'll have to reorganise time.
-
-      // check where this update belongs in time, searching backwards
-      // start at the end (length - 1), minus the last one (already checked)
-      for (let i = this._updateHistory.length - 2; i >= 0; i--) {
-        const sortUpdate = this._updateHistory[i],
-          [sortAction, sortTimestamp, sortSource] = sortUpdate
-
-        // if it's newer than /this/ one, splice it in here
-        if (timestamp > sortTimestamp) {
-          this._updateHistory.splice(i + 1, 0, update)
-
-          // debug: print attempted history state
-          if (typeof window !== 'undefined') {
-            console.groupCollapsed(`history rewind triggered: ${i} ${timestamp}`)
-            console.table(this._updateHistory.map(
-              (u, uI) => uI === i + 1 ? [u[0], JSON.stringify(u[1]), u[2], '<- new update'] : [u[0], JSON.stringify(u[1]), u[2]]
-            ))
-            console.groupEnd(`history rewind triggered: ${i} ${timestamp}`)
-          }
-
-          // reset the store state to how it was before this action was
-          // dispatched, chronologically speaking
-          // history and updates should match 1:1 as long as the same filter
-          // (isGossipType) is applied to both
-          this._reduxDispatch({
-            type: REWIND_ACTION,
-            payload: i,
-            meta: {
-              timestamp: timestamp,
-              sortTimestamp: sortTimestamp
-            }
-          })
-
-          // start a try-catch to ensure this action's new version of time is
-          // valid/calculateable
-          try {
-            // dispatch our current action
-            this._reduxDispatch(action)
-
-            /*
-             * FIXME: don't replay the latest action, it will be dispatched
-             * natually below. wtf.
-             * also we should be rewinding based on timestamp, not shitty index
-            */
-
-            // re-dispatch future actions
-            for (let j = i; j < this._updateHistory.length; j++) {
-              // updates are in the form [action,timestamp,source]
-              this._reduxDispatch(this._updateHistory[j][0])
-            }
-
-          } catch (error) {
-            // if anything bad happens, it was probably not meant to be.
-            console.error('[scuttlebutt] applyUpdate timetravel error', error)
-
-            // TODO: rewind store to a usable state :\
-
-            return false // scuttlebutt: could not apply
-          }
-        }
-      }
-
-      // otherwise, this timestamp must be chronologically first
-      // this is actually impossible to rewind to since we never recorded the
-      // most initial state.
-      // i guess we could literally start over? this code won't stick around
-      // for long (<-- famous last words)
-      this._updateHistory.unshift(update) // <-- wtf is this
-
-      // reset state to the beginning of time
-      this._reduxDispatch({
-        type: RESET_ACTION
-      })
-
-      // a copy of the above, which we really should abstract out.
-      try {
-        this._reduxDispatch(action)
-
-        for (let j = 0; j < this._updateHistory.length; j++) {
-          this._reduxDispatch(this._updateHistory[j][0])
-        }
-      } catch (error) {
-        // if anything bad happens, it was probably not meant to be.
-        console.error('uhh, we reset and it went badly.', error)
-        throw error
-        return false
-      }
-
-      this._travellingTime = false
-
-    } else {
-      this._updateHistory
-
-      // locally dispatch foreign updates
-      // if the update wasn't dispatched during timetravel, dispatch it now.
-      // unless it's local, in which case it already has been dispatched :o
-
-      // all time-traveled actions are replayed, but when no time-travel (and thus
-      // occurs
-      // we must skip
-
-      // in the case of local update is dispatched /beinhd/ a future foriegn
-      // update, it'll be reset and redispatched by the time travelling  anyway.
-
-      // unfortunately this loses the important info of source_id and timestamp
-      // but we don't want to modify the action itself.
-      // maybe they can be added as prefixed non-enumerable properties
-      if (source !== this.id) {
-        this._reduxDispatch(action)
-      }
-    }
-
-    // applied successfully
     return true
   }
 

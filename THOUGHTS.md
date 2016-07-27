@@ -5,8 +5,13 @@ in the spirit of open source, here's some related thoughts. (newest first)
 ## extremely brief thoughts on animation
 
 Your actions, reducer, and store should only include the most basic information
-about your entities. CREATE_ENTITY at [0,0]. MOVE_BOX_IMPULSE
+about your entities. // CREATE_ENTITY at [0,0]. MOVE_BOX_IMPULSE
 
+- describe the impulse of the actions themselves.
+  - CREATE_PROJECTILE, origin[], velocity[], *acceleration*
+  - how does q3 define *acceleration*? just a formula, right?
+  - rocket (accelerates), grenade (initial velcity + gravity), paint air
+-
 
 ## thoughts on identity action chains
 
