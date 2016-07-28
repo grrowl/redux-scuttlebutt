@@ -4,20 +4,25 @@ import Dispatcher, { REWIND_ACTION } from './dispatcher'
 export { isGossipType, REWIND_ACTION } from './dispatcher'
 
 // Store enhancer
-// Wraps createStore to inject our history reducer
+// Wraps createStore to inject our history reducer, wraps dispatch to send and
+// receive actions from peers, and FIXME: getState to apparently break everything
+//
 export default function scuttlebutt(options = null) {
   return (createStore) => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
-    const history = { state: [] },
-      gossip = connectGossip(new Dispatcher())
+    const gossip = connectGossip(new Dispatcher())
 
     return (reducer, preloadedState, enhancer) => {
-      const store = createStore(gossip.wrapReducer(reducer), preloadedState, enhancer)
+      const store = createStore(
+        gossip.wrapReducer(reducer),
+        [[,,preloadedState]], // preloaded state is the earliest snapshot
+        enhancer)
 
       return {
         ...store,
-        dispatch: gossip.wrapDispatch(store.dispatch)
+        dispatch: gossip.wrapDispatch(store.dispatch),
+        getState: gossip.wrapGetState(store.getState)
       }
     }
   }

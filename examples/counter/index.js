@@ -6,7 +6,7 @@ import App from './components/App'
 import counter from './reducers'
 import scuttlebutt from 'redux-scuttlebutt'
 
-const store = createStore(counter, {},
+const store = createStore(counter, undefined,
   scuttlebutt(),
   window.devToolsExtension && window.devToolsExtension()
 )

@@ -5,14 +5,16 @@ export const REWIND_ACTION = '@@scuttlebutt/REWIND'
 export const RESET_ACTION = '@@scuttlebutt/RESET'
 
 export const META_TIMESTAMP = '@@scuttlebutt/TIMESTAMP'
+export const META_SOURCE = '@@scuttlebutt/SOURCE'
 
 // update and state history structure keys
 const UPDATE_ACTION = 0,
   UPDATE_TIMESTAMP = 1,
   UPDATE_SOURCE = 2,
   // state snapshot is post-action
-  STATE_SNAPSHOT = 0,
-  STATE_ACTION = 1
+  STATE_ACTION = 0,
+  STATE_TIMESTAMP = 1,
+  STATE_SNAPSHOT = 2
 
 
 // ignore actiontypes beginning with @
@@ -21,13 +23,7 @@ export function isGossipType(type = '') {
   return type.substr(0, 1) !== '@'
 }
 
-function createRewindAction(timestamp) {
-  return {
-    type: REWIND_ACTION,
-    payload: timestamp
-  }
-}
-
+// not used any more?
 const formatSource = (source = '????') => `${source.substr(0,2)}…${source.substr(-4,4)}`,
   formatTime = (time) => (new Date(time)).toJSON().substr(-10,9),
   formatUpdate = (action, full) => `${formatSource(action[2])} ${formatTime(action[1])} ${full ? JSON.stringify(action[0]) : '~'}`
@@ -65,74 +61,102 @@ export default class Dispatcher extends Scuttlebutt {
     }
   }
 
+  // wraps the initial state, if any, into the first snapshot
+  wrapInitialState(initialState) {
+    return initialState && [,,initialState]
+  }
+
   // rewinds history when it changes
   wrapReducer(reducer) {
     // wrap the root reducer to track history and rewind occasionally
-    return (currentState, action) => {
-      if (typeof window !== 'undefined') {
-        console.groupCollapsed(`about to do ${action}`)
-        console.table(this._stateHistory)
-        console.groupEnd('about to do', action)
+    // currentState is our higher-order form, an array of [snapshot, timestamp]
+    return (currentState = [], action) => {
+      const timestamp = action && action.meta && action.meta[META_TIMESTAMP]
+      let stateIndex
+
+      // this will dispatch an action after the snapshot preceding it, then will
+      // replay actions which occurred after it (if any)
+      // rewind to -1 for "before the start of time"
+      for (stateIndex = currentState.length - 1; stateIndex >= -1; stateIndex--) {
+        const thisTimestamp = currentState[stateIndex] && currentState[stateIndex][STATE_TIMESTAMP],
+          thisSnapshot = stateIndex === -1 ? undefined : currentState[stateIndex][STATE_SNAPSHOT]
+
+        // thisTimestamp will be undefined until the first timestamped action.
+        // if this action has no timestamp, we're before the start of time, or,
+        // crucially, if this action is newer than the this snapshot
+        if (!timestamp || !thisTimestamp || stateIndex === -1 || timestamp > thisTimestamp) {
+          // add to history in the shape [ACTION, TIMESTAMP, SNAPSHOT]
+          // splice doesn't perform well, btw.
+          currentState.splice(stateIndex + 1, 0, [
+            action,
+            timestamp || thisTimestamp, // in case on missing timestamp
+            reducer(thisSnapshot, action)
+          ])
+
+          if (stateIndex !== currentState.length - 1)
+            console.log(`time travelled ${timestamp} after ${thisTimestamp} (𝛥${timestamp - thisTimestamp})`, thisSnapshot)
+
+          break
+        }
       }
 
-      if (action.type === REWIND_ACTION) {
-        // replace the whole state with the one at the timestamp specified
+      // replay any actions after the one just dispatched. skip the last item
+      // of the array, so it won't run for regular, in-order actions
+      // skip the inserted action (index + 1)
+      for (stateIndex = stateIndex + 2; stateIndex < currentState.length; stateIndex++) {
+        const thisState = currentState[stateIndex],
+          thisAction = thisState[STATE_ACTION],
+          lastState = currentState[stateIndex - 1],
+          lastSnapshot = lastState ? lastState[STATE_SNAPSHOT] : undefined
 
         /*
-        * TODO: rewinding should be able to accept timestamps of 0 / pre-time
+        * FIXME: very destructive action. if the update fails, we'll have fucked
+        * all the past histories... but surely they can be replayed.
+        * applyUpdate() should dispatch a special "FORGET_ACTION" which removes
+        * our timestamped new action and replays the previously-good state.
+        * this realistically means we're **quietly catching all errors in the
+        * reducer chain**.
         */
 
-        // go back until we match the timestamp
-        // rewind to -1 to "before the start of time"
-        for (let i = this._stateHistory.length - 1; i >= 0; i--) {
-          const action = this._stateHistory[i][STATE_ACTION],
-            timestamp = action && action.meta && action.meta[META_TIMESTAMP]
-
-          if (typeof window !== 'undefined')
-            console.debug(`ts ${timestamp} <= ${action.payload}? ${timestamp <= action.payload && '✅'}`)
-          else {
-            console.log(`ts ${timestamp} <= ${action.payload}? ${timestamp <= action.payload && '✅'}`)
-            console.log(`ts ${timestamp} <= ${action.payload}? ${timestamp <= action.payload && '✅'}`)
-          }
-
-          // if this state had an action
-          if (timestamp <= action.payload) {
-            // remove history after this point. ahahah how dangerous
-            this._stateHistory.splice(i + 1)
-
-            // return the state as of this moment
-            return this._stateHistory[i][STATE_SNAPSHOT]
-          }
-        }
-
-        throw new Error(`Could not rewind to ${action.payload}`)
-
-      } else if (action.type === RESET_ACTION) {
-        // reset the whole store back to its initial state
-        this._stateHistory = []
-        console.log('reset state')
-        return reducer(undefined, action)
+        // update each state snapshot, secretly hoping each action passes
+        console.log(`-> replaying action ${stateIndex}`, thisAction,
+          thisState[STATE_SNAPSHOT] === reducer(lastSnapshot, thisAction))
+        thisState[STATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
       }
 
-      // ignore private action types. they'll still affect history, but it's
-      // not important to us that it happened
-      if (!isGossipType(action.type)) {
-        return reducer(currentState, action)
-      }
-
-      // add to state history in form [STATE_SNAPSHOT, STATE_ACTION]
-      return this._stateHistory[this._stateHistory.push(
-        [reducer(currentState, action), action]
-      ) - 1][STATE_SNAPSHOT]
+      // if we're here, the currentState history has been updated
+      return currentState
     }
 
+  }
+
+  // wraps getState to return the latest state snapshot
+  // will always be called after @@redux/INIT
+  wrapGetState(getState) {
+    return () => {
+      const state = getState(),
+        lastState = state[state.length - 1]
+
+      console.log('getState', state, lastState)
+
+      return lastState && lastState[STATE_SNAPSHOT]
+    }
   }
 
   // Apply update (action) to our store
   // implemented for scuttlebutt class
   applyUpdate(update) {
     const [action, timestamp, source] = update,
-      [, lastTimestamp] = this._updateHistory[this._updateHistory.length - 1] || [, 0]
+      // [, lastTimestamp] = this._updateHistory[this._updateHistory.length - 1] || [, 0],
+      // add our metadata to the action
+      localAction = {
+        ...action,
+        meta: {
+          ...action.meta,
+          [META_TIMESTAMP]: timestamp,
+          [META_SOURCE]: source
+        }
+      }
 
     // we log all updates to emit in the order we saw them.
     // not sure if it's better than replaying in order of timestamp (which might
@@ -140,69 +164,28 @@ export default class Dispatcher extends Scuttlebutt {
     // like the de facto for scuttlebutt models
     this._updates.push(update)
 
-    // check if in the past
-    if (timestamp < lastTimestamp) {
-      // check where this update belongs in time, searching backwards
-      // start at the end (length - 1), minus the last one (already checked)
+    try {
+      this._reduxDispatch(localAction)
+    } catch (error) {
+      // an update failed, so we'll consider this update invalid
+      console.error('error applying update', localAction)
+      console.error(error.stack)
 
-      // search, rewind to -1 for "before the start of time"
-      for (let i = this._updateHistory.length - 2; i >= -1; i--) {
-        // when -1, it's pre-time, so nothing exists.
-        const sortUpdate = (i === -1 ? [, 0] : this._updateHistory[i]),
-          [sortAction, sortTimestamp, sortSource] = sortUpdate
+      /*
+      * TODO: recover from erroroneous action:
+      *   remove update, replay old history. could do the actual splice
+      *   after the update succeeds? better performance under conflict-
+      *   prone conditions
+      */
+      if (typeof window !== 'undefined')
+        console.warn('your store is probably in a terrible state rn')
 
-        // if it's newer than /this/ one, splice it in here
-        if (timestamp > sortTimestamp) {
-          // add to update history
-          this._updateHistory.splice(i + 1, 0, update)
-
-          // rewind to how things would have been at action time
-          // this will be the state AFTER the action of this timestamp was
-          // applied. This balances wit hthe splice (above) and replay (below)
-          this._reduxDispatch(createRewindAction(timestamp))
-
-          // and replay every action since then (starting with our new one)
-          let j;
-          try {
-            for (let j = i + 1; j < this._updateHistory.length; j++) {
-              // updates are in the form [action,timestamp,source]
-              this._reduxDispatch(this._updateHistory[j][UPDATE_ACTION])
-            }
-          } catch (error) {
-            // an update failed, so we'll consider this update invalid
-            console.error('error applying update', this._updateHistory[j], error)
-
-            /*
-            * TODO: recover from erroroneous action:
-            *   remove update, replay old history. could do the actual splice
-            *   after the update succeeds? better performance under conflict-
-            *   prone conditions
-            */
-            if (typeof window !== 'undefined')
-              console.warn('your store is probably in a terrible state rn')
-
-            return false // do not emit to peers
-          }
-
-          // job done,
-          break
-
-        } else if (i === -1) {
-          // if we weren't after the beginning of time, something's wrong
-          throw new Error('update occurred before the beginning of time')
-        }
-      }
-
-      // we'll reach here only after dispatching
-
-    } else {
-      // a new latest update, lets just append and dispatch
-      this._updateHistory.push(update)
-      this._reduxDispatch(action)
+      return false // do not emit to peers
     }
 
-    console.info('applyUpdate success', update)
     return true
+
+    console.info('applyUpdate success', update)
   }
 
   // gossip
