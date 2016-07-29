@@ -1,13 +1,21 @@
-const Primus = window.Primus
 import Dispatcher, { REWIND_ACTION } from './dispatcher'
+import debounce from 'lodash/debounce'
 
 export { isGossipType, REWIND_ACTION } from './dispatcher'
+
+// Applies default options.
+const defaultOptions = {
+  uri: 'http://localhost:3000',
+  primus: window.Primus,
+}
 
 // Store enhancer
 // Wraps createStore to inject our history reducer, wraps dispatch to send and
 // receive actions from peers, and FIXME: getState to apparently break everything
 //
-export default function scuttlebutt(options = null) {
+export default function scuttlebutt(options) {
+  options = { ...defaultOptions, ...options }
+
   return (createStore) => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
@@ -22,15 +30,16 @@ export default function scuttlebutt(options = null) {
       return {
         ...store,
         dispatch: gossip.wrapDispatch(store.dispatch),
-        getState: gossip.wrapGetState(store.getState)
+        getState: gossip.wrapGetState(store.getState),
+        subscribe: debounce(store.subscribe, 32)
       }
     }
   }
 }
 
 // initialise network io
-function connectGossip(scuttlebutt) {
-  const io = Primus.connect('http://localhost:3000')
+function connectGossip(scuttlebutt, uri) {
+  const io = Primus.connect(uri)
 
   console.log('[io] connecting...')
 

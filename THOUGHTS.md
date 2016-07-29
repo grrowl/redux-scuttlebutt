@@ -2,6 +2,17 @@ in the spirit of open source, here's some related thoughts. (newest first)
 
 ----
 
+## gossiping in recieved order (default) vs chronological order
+
+chronological order is theoretically much more efficient as we have to replay
+less. since scuttlebutt acknowledges with the message itself, as long as we
+communicate from *oldest* to newest, the "last seen timestamp" aspect of the
+protocol is preserved.
+
+the underlying implementation is not so large actually -- once features such as
+rendering, security/verification, etc. are on top, it'll be worth be looking at
+much lower level optimisations/features
+
 ## extremely brief thoughts on animation
 
 Your actions, reducer, and store should only include the most basic information

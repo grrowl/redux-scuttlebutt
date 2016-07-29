@@ -7,7 +7,7 @@ var webpackDevMiddleware = require('webpack-dev-middleware')
 var webpackHotMiddleware = require('webpack-hot-middleware')
 var config = require('./webpack.config')
 
-var port = 3000
+var port = process.env['PORT'] || 3000
 
 var app = new (require('express'))()
 var server = require('http').Server(app)

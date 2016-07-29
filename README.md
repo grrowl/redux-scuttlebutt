@@ -50,11 +50,12 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
 
 ## roadmap
 
-* rewind redux state when actions arrive out of order
-  * limit history to max `n` states, max `t` age, or network consensus age
-  * recover when invalid actions sequences occur
-    * if the root reducer `returns false` that would be great, as long we can reset to last good state and resume quickly
-* lock down socket library and allow pluggable option
+* limit history to max `n` states, max `t` age, or network consensus age
+  * requires snapshot sharing
+* recover when invalid actions sequences occur
+  * we currently try-catch, but we'd rather not (v8 doesn't like it)
+  * we currently overwrite history before it's validated. that's bad.
+*  allow pluggable socket library via option
 * tests
   * simulate a multi-hop distributed network with delay, ensure consistency
   * ensure rewind/reordering works
@@ -63,8 +64,6 @@ migrated to redux-scuttlebutt, under `examples/counter/`.
 * does the underlying protocol expect `_store`/`_updates` (and hence,
   `history()`) to be in a recieved-FIFO order?
   * if not, always store in sorted order, easier for us
-* move all time-ordering responbility into `wrapReducer`, leaving `applyUpdate`
-  to try-catch and action modification (addition of `meta.@@timestamp`)
 
 ## contributions
 

@@ -93,8 +93,12 @@ export default class Dispatcher extends Scuttlebutt {
             reducer(thisSnapshot, action)
           ])
 
-          if (stateIndex !== currentState.length - 1)
-            console.log(`time travelled ${timestamp} after ${thisTimestamp} (𝛥${timestamp - thisTimestamp})`, thisSnapshot)
+          // -1 for length to index, -1 for the additional element we just added to the array
+          /*
+          if (stateIndex !== currentState.length - 2 && typeof window !== 'undefined') {
+            console.log(`time travelled ${timestamp} after ${thisTimestamp} (𝛥${timestamp - thisTimestamp}ms)`)
+          }
+          */
 
           break
         }
@@ -119,9 +123,24 @@ export default class Dispatcher extends Scuttlebutt {
         */
 
         // update each state snapshot, secretly hoping each action passes
-        console.log(`-> replaying action ${stateIndex}`, thisAction,
-          thisState[STATE_SNAPSHOT] === reducer(lastSnapshot, thisAction))
+        // console.log(`-> replaying action ${stateIndex}`,
+        //   thisAction, thisState[STATE_TIMESTAMP], thisAction === action)
+
         thisState[STATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
+
+        // deubg: add a checksum of the ordered timestamps to the store
+        if (typeof window !== 'undefined') {
+          function checksum(arr) {
+            var chk = 0x12345678;
+
+            for (let i = 0; i < arr.length && !isNaN(arr[i]); i++) {
+              chk += (arr[i] * (i + 1));
+            }
+
+            return chk;
+          }
+          window.__checksum = checksum(currentState.map(state => state[STATE_TIMESTAMP]))
+        }
       }
 
       // if we're here, the currentState history has been updated
@@ -136,8 +155,6 @@ export default class Dispatcher extends Scuttlebutt {
     return () => {
       const state = getState(),
         lastState = state[state.length - 1]
-
-      console.log('getState', state, lastState)
 
       return lastState && lastState[STATE_SNAPSHOT]
     }
