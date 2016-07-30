@@ -7,8 +7,10 @@ import counter from './reducers'
 import scuttlebutt from 'redux-scuttlebutt'
 
 const store = createStore(counter, undefined,
-  scuttlebutt(),
-  window.devToolsExtension && window.devToolsExtension()
+  compose(
+    scuttlebutt(),
+    window.devToolsExtension ? window.devToolsExtension() : f => f
+  )
 )
 
 const rootEl = document.getElementById('root')
