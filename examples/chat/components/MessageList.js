@@ -4,19 +4,23 @@ const styles = {
   container: {
     listStyle: 'none',
     padding: 0,
-
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start'
   },
   item: {
     display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'flex-start',
+    borderBottom: '1px solid lightgrey'
+  },
+  content: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
   },
   source: {
+    // Hack, but stops flexbox from stretching
+    minWidth: 64,
+    minHeight: 64,
+    maxWidth: 64,
+    maxHeight: 64,
     marginRight: '0.5rem',
   },
   timestamp: {
@@ -50,12 +54,12 @@ class MessageList extends Component {
       <ol reversed style={ styles.container }>
       {
         messages.reduceRight((list, { message, source, timestamp }, i) => list.concat(
-          <li key={ messages.length - i } style={ styles.item }>
+          <li key={ i } style={ styles.item }>
             <img
               style={ styles.source }
               src={ `https://robohash.org/${source}.png?size=64x64&set=set3` }
               alt={ `Sent by: ${source}` } />
-            <div>
+            <div style={ styles.content }>
               <div style={ styles.timestamp }>
                 { formatDate(new Date(timestamp)) }
               </div>
