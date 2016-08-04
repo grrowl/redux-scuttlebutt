@@ -1,12 +1,11 @@
 import Dispatcher, { REWIND_ACTION } from './dispatcher'
-import debounce from 'lodash/debounce'
 
 export { isGossipType, REWIND_ACTION } from './dispatcher'
 
 // Applies default options.
 const defaultOptions = {
   uri: 'http://localhost:3000',
-  primus: window.Primus,
+  primus: (typeof window === 'object' && window.Primus),
 }
 
 // Store enhancer
@@ -19,7 +18,7 @@ export default function scuttlebutt(options) {
   return (createStore) => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
-    const gossip = connectGossip(new Dispatcher())
+    const gossip = connectGossip(new Dispatcher(), options.uri, options.primus)
 
     return (reducer, preloadedState, enhancer) => {
       const store = createStore(
@@ -31,7 +30,6 @@ export default function scuttlebutt(options) {
         ...store,
         dispatch: gossip.wrapDispatch(store.dispatch),
         getState: gossip.wrapGetState(store.getState),
-        subscribe: debounce(store.subscribe, 32)
       }
     }
   }

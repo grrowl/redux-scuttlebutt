@@ -11,7 +11,14 @@ protocol is preserved.
 
 the underlying implementation is not so large actually -- once features such as
 rendering, security/verification, etc. are on top, it'll be worth be looking at
-much lower level optimisations/features
+much lower level optimisations/features.
+
+needs more investigation into the dispatch -> localUpdate -> applyUpdate ->
+network chain. We ideally want to "batch up" multiple mesasges which come in at
+"once", but it seems we're quite rigidly just responding to events. Needs
+buffered streams
+
+> RESULT: gossiping in chronological order is better than the current default.
 
 ## extremely brief thoughts on animation
 

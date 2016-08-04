@@ -16,17 +16,11 @@ const UPDATE_ACTION = 0,
   STATE_TIMESTAMP = 1,
   STATE_SNAPSHOT = 2
 
-
 // ignore actiontypes beginning with @
 // by default just pass through missing types (redux will blow up later)
 export function isGossipType(type = '') {
   return type.substr(0, 1) !== '@'
 }
-
-// not used any more?
-const formatSource = (source = '????') => `${source.substr(0,2)}…${source.substr(-4,4)}`,
-  formatTime = (time) => (new Date(time)).toJSON().substr(-10,9),
-  formatUpdate = (action, full) => `${formatSource(action[2])} ${formatTime(action[1])} ${full ? JSON.stringify(action[0]) : '~'}`
 
 export default class Dispatcher extends Scuttlebutt {
   constructor() {
