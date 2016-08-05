@@ -42,7 +42,7 @@ actions, local dispatching of remote actions, and altering action history
 
 Our default export is the store enhancer. You use it like this:
 
-```
+```js
 // configureStore.js
 
 import { createStore, applyMiddleware } from 'redux'
