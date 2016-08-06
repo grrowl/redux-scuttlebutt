@@ -74,7 +74,8 @@ scuttlebutt` your example project directory during development.
   [redux counter example](https://github.com/reactjs/redux/tree/master/examples/counter)
   with the addition of redux-scuttlebutt.
 * `chat`: A very basic chat application.
-* [Conway's Game Of Life](https://github.com/grrowl/redux-game-of-life-scuttlebutt)
+* `grrowl/redux-game-of-life-scuttlebutt`:
+  [Conway's Game Of Life](https://github.com/grrowl/redux-game-of-life-scuttlebutt)
   multiplayer edition.
 
 ## roadmap
@@ -85,7 +86,8 @@ scuttlebutt` your example project directory during development.
   source timestamps. New peers would need a state snapshot.
   * requires snapshot sharing, extending scuttlebutt protocol.
 * recover when invalid actions sequences occur
-  * we currently overwrite history during replay and don't handle recovery.
+  * we currently overwrite history during replay and don't handle recovery of
+    error.
 * allow pluggable socket library/transport
 * tests
   * simulate a multi-hop distributed network with delay, ensure consistency

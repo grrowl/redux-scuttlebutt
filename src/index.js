@@ -1,6 +1,9 @@
-import Dispatcher, { REWIND_ACTION } from './dispatcher'
+import Dispatcher from './dispatcher'
+import { REWIND_ACTION } from './constants'
 
-export { isGossipType, REWIND_ACTION } from './dispatcher'
+export { isGossipType } from './dispatcher'
+export { REWIND_ACTION } from './constants'
+
 
 // Applies default options.
 const defaultOptions = {
