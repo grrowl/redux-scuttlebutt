@@ -5,12 +5,12 @@ import App from './components/App'
 import counter from './reducers'
 import scuttlebutt from 'redux-scuttlebutt'
 
-const store = createStore(counter, undefined,
-  compose(
-    scuttlebutt(),
-    window.devToolsExtension ? window.devToolsExtension() : f => f,
-  )
+const enhancer = compose(
+  scuttlebutt(),
+  window.devToolsExtension ? window.devToolsExtension() : f => f,
 )
+
+const store = createStore(counter, undefined, enhancer)
 
 const rootEl = document.getElementById('root')
 
