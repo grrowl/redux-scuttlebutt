@@ -2,6 +2,47 @@ in the spirit of open source, here's some related thoughts. (newest first)
 
 ----
 
+## prior art
+
+Most of my research has been on the technical side, reading papers and looking
+at protocols, lots of theory. Turns out people are working on similar problems
+today:
+
+* https://github.com/philholden/redux-swarmlog - similar module, extending
+  swarm.js
+  * `redux-swarmlog` composes `swarmlog` which composes `hyperlog` which
+    is a Merkle DAG which replicates based on scuttlebutt logs.
+* https://drive.googleblog.com/2010/09/whats-different-about-new-google-docs.html
+* https://github.com/dominictarr/scuttlebucket - nested scuttlebutts. probably
+  not relevant for us yet, as we leave the data modelling up to the reducers.
+
+Data Type implementations
+
+* https://github.com/aphyr/meangirls: CRDTs implemented in Ruby.
+* https://github.com/ericmoritz/crdt: CRDTs in Python
+
+### scuttlebutts
+
+* `scuttlebutt` (current) hasn't had many updates in favour of
+* `secure-scuttlebutt` which (i think) is way too heavy for our purposes.
+    * 'secret-handshake` sets up a excellent encrypted connection
+* `simple-scuttlebutt` is great but implements a state-based CRDT. we really just
+  want a simple op log
+
+## batched updates/subscribe
+
+* `ReactDOM.unstable_batchedUpdates`: Batches the actual updating of the view
+  (it queues all DOM updates) but runs all Redux reducing and rendering on time.
+* `redux-batched-subscribe`: Batches the actual subscribe calls.
+
+It seems we either
+
+* Wrap subscribe() to prevent notifying listeners while we're calculating stuff.
+* Only dispatch a single action with a bunch of actions, which is
+  handled/reduced in wrapReducer. ugh. this is better and Dan Abramov approved™
+  but requires a more complicated implementation.
+  see: <https://twitter.com/dan_abramov/status/656074974533459968>
+
 ## gossiping in recieved order (default) vs chronological order
 
 chronological order is theoretically much more efficient as we have to replay

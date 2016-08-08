@@ -34,8 +34,12 @@ export const reducer = (reducer) => (currentState = [], action) => {
       // add to history in the shape [ACTION, TIMESTAMP, SNAPSHOT]
       // splice doesn't perform well, btw.
       currentState.splice(stateIndex + 1, 0, [
+        // the action itself
         action,
-        timestamp || thisTimestamp, // in case on missing timestamp
+        // in case of missing timestamp, set it to the most previous action's timestamp
+        // it'll still be `undefined` for the very first (non-gossip) action (@redux/INIT)
+        timestamp || thisTimestamp,
+        // the result of running this action. we'll return it later.
         reducer(thisSnapshot, action)
       ])
 
@@ -74,7 +78,7 @@ export const reducer = (reducer) => (currentState = [], action) => {
 
     thisState[STATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
 
-    // deubg: add a checksum of the ordered timestamps to the store
+    // debug: add a checksum of the ordered timestamps to the store
     if (typeof window !== 'undefined') {
       function checksum(arr) {
         var chk = 0x12345678;

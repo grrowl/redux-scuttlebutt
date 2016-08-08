@@ -61,6 +61,25 @@ export default (initialState) => {
 It wraps your store's root reducer (to store history), `getState` (to return the
 current state in history) and `dispatch` (to connect to peers).
 
+## conflict-free reducers
+
+While `redux-scuttlebutt` facilitates action sharing and enhancing the store,
+it's the responsiblity of the app's reducers to apply actions. Overall your app
+must be strictly pure, without side effects or non-deterministic mutations.
+
+In a complex real-time multi-user app, this is easier said than done. Some
+strategies may be,
+
+* Avoid preconditions. The Game Of Life example only dispatches TOGGLE and STEP.
+  Neither have preconditions, there's no "illegal" way to dispatch them, and
+  they'll always successfully mutate state.
+* Only allow peers (action sources) control over their own domain (entity). An
+  entity might request something of another entity, which that entity would then
+  dispatch its own action to mutate its own domain.
+* Implement a Conflict-free data type, which only allows certain operations in
+  exchange for never conflicting.
+  See: https://github.com/pfrazee/crdt_notes#portfolio-of-basic-crdts
+
 ## example
 
 Examples are found under `examples/`.
@@ -79,6 +98,14 @@ scuttlebutt` your example project directory during development.
   multiplayer edition.
 
 ## roadmap
+
+one of:
+
+* add encryption over the top of our existing scuttlebutt library
+  * is it as simple as extra pipeing through encrypt/decrypt
+* use a different implementation
+  * simple-scuttlebutt is maybe better but wraps it up in a state-based model.
+    unfortunate.
 
 * batch updates which come in "at once"
   * ala <https://github.com/tappleby/redux-batched-subscribe>
