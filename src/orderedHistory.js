@@ -77,20 +77,6 @@ export const reducer = (reducer) => (currentState = [], action) => {
     //   thisAction, thisState[STATE_TIMESTAMP], thisAction === action)
 
     thisState[STATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
-
-    // debug: add a checksum of the ordered timestamps to the store
-    if (typeof window !== 'undefined') {
-      function checksum(arr) {
-        var chk = 0x12345678;
-
-        for (let i = 0; i < arr.length && !isNaN(arr[i]); i++) {
-          chk += (arr[i] * (i + 1));
-        }
-
-        return chk;
-      }
-      window.__checksum = checksum(currentState.map(state => state[STATE_TIMESTAMP]))
-    }
   }
 
   // if we're here, the currentState history has been updated

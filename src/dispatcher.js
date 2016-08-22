@@ -28,9 +28,12 @@ export default class Dispatcher extends Scuttlebutt {
     // history of store states after each action was applied
     this._stateHistory = []
 
-    // dispatch to redux
+    // redux methods to wrap
     this._reduxDispatch = () => {
       throw new Error('Are you sure you called wrapDispatch?')
+    }
+    this._reduxGetState = () => {
+      throw new Error('Are you sure you called wrapGetState?')
     }
   }
 
@@ -49,6 +52,13 @@ export default class Dispatcher extends Scuttlebutt {
     }
   }
 
+  // wraps getState to the state within orderedHistory
+  wrapGetState(getState) {
+    this._reduxGetState = getState
+
+    return () => orderedHistory.getState(getState())
+  }
+
   // wraps the initial state, if any, into the first snapshot
   wrapInitialState(initialState) {
     return initialState && [,,initialState]
@@ -62,11 +72,6 @@ export default class Dispatcher extends Scuttlebutt {
     return (currentState, action) => {
       return historyReducer(currentState, action)
     }
-  }
-
-  // wraps getState to the state within orderedHistory
-  wrapGetState(getState) {
-    return () => orderedHistory.getState(getState())
   }
 
   // Apply update (action) to our store
@@ -89,28 +94,14 @@ export default class Dispatcher extends Scuttlebutt {
     // like the de facto for scuttlebutt models
     this._updates.push(update)
 
-    try {
+    if (this._delayedDispatch) {
+      this._delayedDispatch(localAction)
+    } else {
       this._reduxDispatch(localAction)
-    } catch (error) {
-      // an update failed, so we'll consider this update invalid
-      console.error('error applying update', localAction)
-      console.error(error.stack)
-
-      /*
-      * TODO: recover from erroroneous action:
-      *   remove update, replay old history. could do the actual splice
-      *   after the update succeeds? better performance under conflict-
-      *   prone conditions
-      */
-      if (typeof window !== 'undefined')
-        console.warn('your store is probably in a terrible state rn')
-
-      return false // do not emit to peers
     }
 
+    // recieved message succesfully. if false, peers may retry the message.
     return true
-
-    console.info('applyUpdate success', update)
   }
 
   // gossip
