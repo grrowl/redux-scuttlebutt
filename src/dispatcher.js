@@ -16,9 +16,59 @@ export function isGossipType(type = '') {
   return type.substr(0, 1) !== '@'
 }
 
+// queue a _reduxDispatch call, debounced by animation frame.
+// configurable, but requires use of private methods at the moment
+// keep a reference to dispatcher because methods will change over time
+function getDelayedDispatch(dispatcher) {
+  if (typeof window === 'undefined'
+    || typeof requestAnimationFrame !== 'function') {
+    return false
+  }
+
+  const queue = []
+
+  return function delayedDispatch(action) {
+    queue.push(action)
+
+    // on first action, queue dispatching the action queue
+    if (queue.length === 1) {
+      requestAnimationFrame(() => {
+        let state = dispatcher._reduxGetState(),
+          i
+
+        for (i = 0; i <= queue.length - 1; i++) {
+          // for-real dispatch the last action, triggering redux's subscribe
+          // (and thus UI re-renders). This prioritises crunching data over
+          // feedback, but potentially we should dispatch perodically, even
+          // with items in the queue
+          if (i < queue.length - 2) {
+            state = dispatcher._historyReducer(state, queue[i])
+          } else {
+            dispatcher._reduxDispatch(queue[i])
+          }
+        }
+
+        console.log('emptying action queue of', queue.length, 'dispatched', i)
+
+        // reset the queue
+        queue.splice(0, i + 1)
+      })
+    }
+  }
+}
+
+const defaultOptions = {
+  delayedDispatch: getDelayedDispatch,
+}
+
 export default class Dispatcher extends Scuttlebutt {
-  constructor() {
+  constructor(options) {
     super()
+
+    this.options = { ...defaultOptions, ...options }
+
+    this._delayedDispatch =
+      this.options.delayedDispatch && this.options.delayedDispatch(this)
 
     // history of all current updates
     // in-recieved-order is for scuttlebutt, sorted for time travel
@@ -66,11 +116,11 @@ export default class Dispatcher extends Scuttlebutt {
 
   // rewinds history when it changes
   wrapReducer(reducer) {
-    const historyReducer = orderedHistory.reducer(reducer)
+    this._historyReducer = orderedHistory.reducer(reducer)
 
     // wrap the root reducer to track history and rewind occasionally
     return (currentState, action) => {
-      return historyReducer(currentState, action)
+      return this._historyReducer(currentState, action)
     }
   }
 
