@@ -17,6 +17,12 @@ export default function scuttlebuttServer(server) {
       gossipStream = gossip.createStream()
 
   const statistics = {}
+
+  // prime statistics for when spark.id is undefined, presumably server messages
+  statistics[undefined] = {
+    recv: 0, sent: 0, s: 'connected'
+  }
+
   setInterval(() => {
     for (let spark in statistics) {
       console.log(`${spark}: ${statistics[spark].recv} recv ${statistics[spark].sent} sent (${statistics[spark].s})`)
