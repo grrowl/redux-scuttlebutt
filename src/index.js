@@ -53,11 +53,14 @@ function connectGossip(scuttlebutt, uri) {
 function connectStreams(io, gossip) {
   // would love to do this. it doesn't work:
   // spark.pipe(docStream).pipe(spark)
+
   let DEBUG_DELAY
   if (/^#\d+/.test(window.location.hash)) {
     DEBUG_DELAY = parseInt(window.location.hash.substr(1))
     console.debug('delayed connection active', DEBUG_DELAY)
   }
+
+  // scuttlebutt uses 'stream', but primus does not, hence the lopsided pipe
 
   io.on('data', function message(data) {
     // console.log('[io] <-', data)
@@ -67,13 +70,14 @@ function connectStreams(io, gossip) {
     gossip.write(data)
   })
 
-  gossip.on('data', (data) => {
-    // console.log('[io] ->', data)
-    if (DEBUG_DELAY) {
-      return setTimeout(() => io.write(data), DEBUG_DELAY)
-    }
-    io.write(data)
-  })
+  gossip.pipe(io)
+  // gossip.on('data', (data) => {
+  //   // console.log('[io] ->', data)
+  //   if (DEBUG_DELAY) {
+  //     return setTimeout(() => io.write(data), DEBUG_DELAY)
+  //   }
+  //   io.write(data)
+  // })
 
   // network events
 

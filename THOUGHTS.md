@@ -15,6 +15,8 @@ today:
 * https://drive.googleblog.com/2010/09/whats-different-about-new-google-docs.html
 * https://github.com/dominictarr/scuttlebucket - nested scuttlebutts. probably
   not relevant for us yet, as we leave the data modelling up to the reducers.
+* https://github.com/Netflix/msl - Netflix's Message Security Layer
+* https://www.pubnub.com/docs/web-javascript/pam-security
 
 Data Type implementations
 
@@ -28,6 +30,127 @@ Data Type implementations
     * 'secret-handshake` sets up a excellent encrypted connection
 * `simple-scuttlebutt` is great but implements a state-based CRDT. we really just
   want a simple op log
+* `swarm-protocol` implements a shared *partially ordered* log between peers
+  * great: cypto-strong guarantee layer. Subscriptions (somehow)
+  * too much: `Spec` defines "type" and "ID" (for Model id and types),
+
+
+All scuttlebutts/swarm are designed to be:
+* Replication layer (op, replicate, client id, encryption/security)
+* -> Model (applies ops, updates outer-facing State)
+  * Model handles the "timestamp" but the datatypes *should*
+*handle* *concurrent* *updates*
+* -> Renderable, whatever that is. Usually React without Redux.
+  * What does Redux "give" us?
+  * regular Flux already has "actions", via dispatcher, through
+
+
+We add some layers in order in order to vastly complicate the datatypes you can
+represent. (as in, you're not just handling a single, or a handful of objects
+with specific CRDT semantics, but a huge number of nested CRDTs scattered across
+reducer root keys and depths. Reducers can be combined/nested trivially.)
+
+^^ *that's the ticket* Traditional replicated CRDT libraries expose a single or
+a handful of CRDT models. `redux-scuttlebutt` makes it easy to have a multiple
+complex CRDTs. It's just redux -- you don't need to use React, your store will
+always be the "current state".
+
+
+Our scuttlebutt/swarm is designed to be:
+* Replication layer (op, replicate, client id, encryption/security)
+  * Store enhancer, controls the operation of the Redux layer
+  * Serializes Actions with (client id + timestamp)
+  * Security: this user is unique
+* Redux / OpConsumer layer (totally orders and replays actions)
+  * Exists
+* Reducing later (applies actions which might be Ops)
+  * Normal Reducer
+* Renderable layer (redux subscribe and render())
+  * Could also be non-React
+
+* "Client id"
+  * Denoted by "public key" or "hash"
+* Security
+  *
+
+#### subscribing
+
+Swarm uses `.on` to say "i want to subscribe to this Object with this ID"
+We don't have "objects" with "IDs" -- we have a root-level "scope" which all
+actions are scoped to. This means we can't use Swarm ops unless we implement
+similar semantics.
+
+We'd rather know _everything_ within that scope. Is this compatible with
+"snapshots", given that we can't just "getState()" in this method?
+
+```
+// store
+{
+  scopes{}: scopesReducer({
+    entities:
+  })
+}
+```
+
+```
+// getState()
+{
+  scopes: {
+    index: {
+      entities: [],
+      players: [],
+      worldMutations: [],
+    }
+  }
+}
+```
+
+scopedReducer({
+  entities,
+  players,
+  worldMutations,
+}) => like combineReducers, but splits actions according to meta.@@scope key.
+
+so, returns
+{
+  [@@scope]: { entities, players, worldMutations },
+  [@@scope]: { ... },
+  ~~undefined~~: { ... } // unscoped actions should not take effect within here.
+}
+
+
+
+## not really scuttlebutt
+
+It occurs to me that many of the original reasons for CRDTs (concurrent actions
+coming from everywhere) since we are already re-ordering time before applying
+the operations. It's a cool feature of redux but effectively you can only write
+"generative" apps.
+
+Entities don't *lose* health, they *gain* damage. // Totally correct. To reduce
+your damage, you'd implement `current = taken - healed`. So who's in control of
+that `entities.player1.damage[]` variable?
+
+* We give the `player1` domain the player, other Dispatchers say DAMAGE_PLAYER
+  and player says UPDATE_ENTITY?
+* Anyone dispatches DAMAGE_PLAYER but the player/we somehow validate if it's a
+  "valid" one.
+  This introduces preconditions / is turning into try-catch again.
+* Laissez-faire: everyone can do everything at all times.
+
+Receiving and spending money is hellish, or is it?
+
+* You could have an "item" which can be transferred
+  * Block chain-like, a TRANSFER_OWNERSHIP must match `.owner` to the pubkey of
+    the action creator, which updates the key. If owner doesn't match, no action
+    is performed.
+  * No error state -- no match, no update.
+  *
+  * Function of the timestamp. If someone posts that timestamp before you, you
+    lose.
+    * Obvious vector for shenanigans, we need something stronger than time-based
+
+
 
 ## batched updates/subscribe
 
