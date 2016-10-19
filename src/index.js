@@ -2,7 +2,7 @@ import Dispatcher from './dispatcher'
 import { REWIND_ACTION } from './constants'
 
 export { isGossipType } from './dispatcher'
-export { REWIND_ACTION } from './constants'
+export { META_SOURCE, META_TIMESTAMP, REWIND_ACTION } from './constants'
 
 
 // Applies default options.

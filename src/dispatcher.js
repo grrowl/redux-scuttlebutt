@@ -16,9 +16,62 @@ export function isGossipType(type = '') {
   return type.substr(0, 1) !== '@'
 }
 
+// queue a _reduxDispatch call, debounced by animation frame.
+// configurable, but requires use of private methods at the moment
+// keep a reference to dispatcher because methods will change over time
+function getDelayedDispatch(dispatcher) {
+  if (typeof window === 'undefined'
+    || typeof requestAnimationFrame !== 'function') {
+    return false
+  }
+
+  const queue = []
+
+  function drainQueue() {
+    let state = dispatcher._reduxGetState(),
+      i
+
+    for (i = 0; i < 100 && (i <= queue.length - 1); i++) {
+      // for-real dispatch the last action, triggering redux's subscribe
+      // (and thus UI re-renders). This prioritises crunching data over
+      // feedback, but potentially we should dispatch perodically, even
+      // with items in the queue
+      if (i < queue.length - 1) {
+        state = dispatcher._historyReducer(state, queue[i])
+      } else {
+        dispatcher._reduxDispatch(queue[i])
+      }
+    }
+
+    // reset the queue
+    queue.splice(0, i + 1)
+
+    if (queue.length)
+      requestAnimationFrame(drainQueue)
+  }
+
+  return function delayedDispatch(action) {
+    queue.push(action)
+
+    // on first action, queue dispatching the action queue
+    if (queue.length === 1) {
+      requestAnimationFrame(drainQueue)
+    }
+  }
+}
+
+const defaultOptions = {
+  customDispatch: getDelayedDispatch,
+}
+
 export default class Dispatcher extends Scuttlebutt {
-  constructor() {
+  constructor(options) {
     super()
+
+    this.options = { ...defaultOptions, ...options }
+
+    this._customDispatch =
+      this.options.customDispatch && this.options.customDispatch(this)
 
     // history of all current updates
     // in-recieved-order is for scuttlebutt, sorted for time travel
@@ -28,9 +81,12 @@ export default class Dispatcher extends Scuttlebutt {
     // history of store states after each action was applied
     this._stateHistory = []
 
-    // dispatch to redux
+    // redux methods to wrap
     this._reduxDispatch = () => {
       throw new Error('Are you sure you called wrapDispatch?')
+    }
+    this._reduxGetState = () => {
+      throw new Error('Are you sure you called wrapGetState?')
     }
   }
 
@@ -49,6 +105,13 @@ export default class Dispatcher extends Scuttlebutt {
     }
   }
 
+  // wraps getState to the state within orderedHistory
+  wrapGetState(getState) {
+    this._reduxGetState = getState
+
+    return () => orderedHistory.getState(getState())
+  }
+
   // wraps the initial state, if any, into the first snapshot
   wrapInitialState(initialState) {
     return initialState && [,,initialState]
@@ -56,17 +119,12 @@ export default class Dispatcher extends Scuttlebutt {
 
   // rewinds history when it changes
   wrapReducer(reducer) {
-    const historyReducer = orderedHistory.reducer(reducer)
+    this._historyReducer = orderedHistory.reducer(reducer)
 
     // wrap the root reducer to track history and rewind occasionally
     return (currentState, action) => {
-      return historyReducer(currentState, action)
+      return this._historyReducer(currentState, action)
     }
-  }
-
-  // wraps getState to the state within orderedHistory
-  wrapGetState(getState) {
-    return () => orderedHistory.getState(getState())
   }
 
   // Apply update (action) to our store
@@ -89,28 +147,14 @@ export default class Dispatcher extends Scuttlebutt {
     // like the de facto for scuttlebutt models
     this._updates.push(update)
 
-    try {
+    if (this._customDispatch) {
+      this._customDispatch(localAction)
+    } else {
       this._reduxDispatch(localAction)
-    } catch (error) {
-      // an update failed, so we'll consider this update invalid
-      console.error('error applying update', localAction)
-      console.error(error.stack)
-
-      /*
-      * TODO: recover from erroroneous action:
-      *   remove update, replay old history. could do the actual splice
-      *   after the update succeeds? better performance under conflict-
-      *   prone conditions
-      */
-      if (typeof window !== 'undefined')
-        console.warn('your store is probably in a terrible state rn')
-
-      return false // do not emit to peers
     }
 
+    // recieved message succesfully. if false, peers may retry the message.
     return true
-
-    console.info('applyUpdate success', update)
   }
 
   // gossip
