@@ -39,11 +39,6 @@ function getDelayedDispatch(dispatcher) {
       if (i < queue.length - 1) {
         state = dispatcher._historyReducer(state, queue[i])
       } else {
-        // unsure of delaying the dispatch itself is a net gain.
-        // requestAnimationFrame(
-        //   ((action) => () => dispatcher._reduxDispatch(action))(queue[i])
-        // )
-
         dispatcher._reduxDispatch(queue[i])
       }
     }
@@ -66,7 +61,7 @@ function getDelayedDispatch(dispatcher) {
 }
 
 const defaultOptions = {
-  delayedDispatch: getDelayedDispatch,
+  customDispatch: getDelayedDispatch,
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -75,8 +70,8 @@ export default class Dispatcher extends Scuttlebutt {
 
     this.options = { ...defaultOptions, ...options }
 
-    this._delayedDispatch =
-      this.options.delayedDispatch && this.options.delayedDispatch(this)
+    this._customDispatch =
+      this.options.customDispatch && this.options.customDispatch(this)
 
     // history of all current updates
     // in-recieved-order is for scuttlebutt, sorted for time travel
@@ -152,8 +147,8 @@ export default class Dispatcher extends Scuttlebutt {
     // like the de facto for scuttlebutt models
     this._updates.push(update)
 
-    if (this._delayedDispatch) {
-      this._delayedDispatch(localAction)
+    if (this._customDispatch) {
+      this._customDispatch(localAction)
     } else {
       this._reduxDispatch(localAction)
     }
