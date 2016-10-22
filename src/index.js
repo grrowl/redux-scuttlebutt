@@ -8,8 +8,8 @@ export { META_SOURCE, META_TIMESTAMP, REWIND_ACTION } from './constants'
 // Applies default options.
 const defaultOptions = {
   uri: 'http://localhost:3000',
+  primusOptions: {},
   primus: (typeof window === 'object' && window.Primus),
-  dispatcherOptions: null
 }
 
 // Store enhancer
@@ -22,33 +22,36 @@ export default function scuttlebutt(options) {
   return (createStore) => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
-    const gossip = connectGossip(
-        new Dispatcher(options.dispatcherOptions),
-        options.uri, options.primus
+    const scuttlebutt = connectGossip(
+        new Dispatcher(),
+        options.uri,
+        options.primusOptions,
+        options.primus
       )
 
     return (reducer, preloadedState, enhancer) => {
       const store = createStore(
-        gossip.wrapReducer(reducer),
+        scuttlebutt.wrapReducer(reducer),
         [[,,preloadedState]], // preloaded state is the earliest snapshot
         enhancer)
 
       return {
         ...store,
-        dispatch: gossip.wrapDispatch(store.dispatch),
-        getState: gossip.wrapGetState(store.getState),
+        scuttlebutt,
+        dispatch: scuttlebutt.wrapDispatch(store.dispatch),
+        getState: scuttlebutt.wrapGetState(store.getState),
       }
     }
   }
 }
 
 // initialise network io
-function connectGossip(scuttlebutt, uri) {
-  const io = Primus.connect(uri)
+function connectGossip(scuttlebutt, uri, primusOptions, Primus) {
+  scuttlebutt.io = Primus.connect(uri, primusOptions)
 
   console.log('[io] connecting...')
 
-  connectStreams(io, scuttlebutt.createStream())
+  connectStreams(scuttlebutt.io, scuttlebutt.createStream())
 
   return scuttlebutt
 }
