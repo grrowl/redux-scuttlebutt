@@ -9,6 +9,7 @@ export { META_SOURCE, META_TIMESTAMP, REWIND_ACTION } from './constants'
 const defaultOptions = {
   uri: 'http://localhost:3000',
   primus: (typeof window === 'object' && window.Primus),
+  dispatcherOptions: null
 }
 
 // Store enhancer
@@ -21,7 +22,10 @@ export default function scuttlebutt(options) {
   return (createStore) => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
-    const gossip = connectGossip(new Dispatcher(), options.uri, options.primus)
+    const gossip = connectGossip(
+        new Dispatcher(options.dispatcherOptions),
+        options.uri, options.primus
+      )
 
     return (reducer, preloadedState, enhancer) => {
       const store = createStore(
