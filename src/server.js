@@ -18,17 +18,24 @@ export default function scuttlebuttServer(server) {
 
   const statistics = {}
 
+  var statisticsDirty = true
+
   // prime statistics for when spark.id is undefined, presumably server messages
   statistics[undefined] = {
     recv: 0, sent: 0, s: 'other'
   }
 
   setInterval(() => {
+    if (!statisticsDirty)
+      return
+
+    statisticsDirty = false
+
     for (let spark in statistics) {
       console.log(`${spark}: ${statistics[spark].recv} recv ${statistics[spark].sent} sent (${statistics[spark].s})`)
     }
-    console.log('-')
-  }, 2500)
+    console.log('^^^ ' + (new Date()) + ' ^^^')
+  }, 10000)
 
   connectRedux(gossip)
 
@@ -48,6 +55,7 @@ export default function scuttlebuttServer(server) {
     spark.on('data', function recv(data) {
       // console.log('[io]', spark.id, '<-', data);
       statistics[spark.id] ? statistics[spark.id].recv++ : console.log(`${spark.id} didn't have recv stats ready?`)
+      statisticsDirty = true
       // statistics[spark.id].recv++
       stream.write(data)
     });
@@ -55,6 +63,7 @@ export default function scuttlebuttServer(server) {
     stream.on('data', (data) => {
       // console.log('[io]', spark.id || 'origin', '->', data);
       statistics[spark.id] ? statistics[spark.id].sent++ : console.log(`${spark.id} didn't have sent stats ready?`)
+      statisticsDirty = true
       spark.write(data)
     })
 
