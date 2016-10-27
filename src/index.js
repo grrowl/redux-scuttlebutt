@@ -10,6 +10,7 @@ const defaultOptions = {
   uri: 'http://localhost:3000',
   primusOptions: {},
   primus: (typeof window === 'object' && window.Primus),
+  dispatcherOptions: {},
 }
 
 // Store enhancer
@@ -23,7 +24,7 @@ export default function scuttlebutt(options) {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
     const scuttlebutt = connectGossip(
-        new Dispatcher(),
+        new Dispatcher(options.dispatcherOptions),
         options.uri,
         options.primusOptions,
         options.primus

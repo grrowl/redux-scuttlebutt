@@ -1,6 +1,6 @@
 {
   "name": "redux-scuttlebutt",
-  "version": "0.0.4-alpha.2",
+  "version": "0.0.4-alpha.3",
   "description": "Redux distributed dispatcher",
   "main": "lib/index.js",
   "files": [

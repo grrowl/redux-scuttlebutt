@@ -101,8 +101,8 @@ scuttlebutt` your example project directory during development.
 
 one of:
 
-* add encryption over the top of our existing scuttlebutt library
-  * is it as simple as extra pipeing through encrypt/decrypt
+* add message validation on top of our existing scuttlebutt library
+  * is it as simple as adding a secure hash/signature to the message
 * use a different implementation
   * simple-scuttlebutt is maybe better but wraps it up in a state-based model.
     unfortunate.
