@@ -1,20 +1,12 @@
+import fs from 'fs'
 
-function entries(O) {
-  var obj = (O);
-  var entrys = [];
-  for (var key in obj) {
-    // if (has(obj, key) && isEnumerable(obj, key)) {
-      entrys.push([key, obj[key]]);
-    // }
-  }
-  return entrys;
-};
+const INFILE = process.env['INFILE'],
+  OUTFILE = process.env['OUTFILE']
 
 export default function scuttlebuttServer(server) {
   const primusServer = new (require('primus'))(server, {}),
       Dispatcher = require('./dispatcher').default,
-      gossip = new Dispatcher(),
-      gossipStream = gossip.createStream()
+      gossip = new Dispatcher()
 
   const statistics = {}
 
@@ -31,17 +23,75 @@ export default function scuttlebuttServer(server) {
 
     statisticsDirty = false
 
+    /*
+    // full client statistics
+    console.log('^^^ ' + (new Date()) + ' ^^^')
     for (let spark in statistics) {
       console.log(`${spark}: ${statistics[spark].recv} recv ${statistics[spark].sent} sent (${statistics[spark].s})`)
     }
-    console.log('^^^ ' + (new Date()) + ' ^^^')
+    */
+
+    // basic statistics
+    console.log([
+      (new Date()).toLocaleString('en-AU'),
+      ': ',
+      (() => {
+        let recv = 0, sent = 0, connected = 0, disconnected = 0, other = 0
+        for (let spark in statistics) {
+          recv += statistics[spark].recv
+          sent += statistics[spark].sent
+
+          if (statistics[spark].s === 'connected')
+            connected++
+          else if (statistics[spark].s === 'disconnected')
+            disconnected++
+          else
+            other++
+        }
+
+        return `recv ${recv}, sent ${sent}, (${connected} 🌏, ${disconnected} 🔕, ${other} 👥)`
+      })()
+    ].join(''))
+
   }, 10000)
 
   connectRedux(gossip)
 
-  gossipStream.on('data', (data) => {
-    console.log('[gossip]', data)
-  })
+  if (INFILE || OUTFILE) {
+    if (INFILE) {
+      const gossipWriteSteam = gossip.createWriteStream()
+      fs.createReadStream(INFILE).pipe(gossipWriteSteam)
+
+      console.log('📼  Reading from ' + INFILE)
+    }
+
+    if (OUTFILE) {
+      const gossipReadSteam = gossip.createReadStream()
+      let hasSynced = false
+
+      // For some reason, we're not getting any 'sync' events from Dispatcher,
+      // so we'll listen for it in the datastream and write to disk after it.
+      // <https://github.com/dominictarr/scuttlebutt#persistence>
+
+      gossipReadSteam.on('data', (data) => {
+        if (data === '"SYNC"\n') {
+          if (hasSynced) {
+            console.log('📼  Write history (sync) 🚨🚨🚨🚨 RECEIVED MULTIPLE SYNCS')
+          } else {
+            console.log('📼  Writing to ' + OUTFILE)
+            gossipReadSteam.pipe(fs.createWriteStream(OUTFILE))
+            hasSynced = true
+          }
+        }
+      })
+
+      gossip.on('sync', function () {
+        gossipReadSteam.pipe(fs.createWriteStream(OUTFILE))
+      })
+
+      console.log('📼  Ready to write to ' + OUTFILE)
+    }
+  }
 
   primusServer.on('connection', (spark) => {
     var stream = gossip.createStream()
@@ -69,6 +119,7 @@ export default function scuttlebuttServer(server) {
 
     stream.on('error', (error) => {
       console.log('[io]', spark.id, 'ERROR:', error);
+      spark.end('Disconnecting due to error', { reconnect: true })
     })
   })
 

@@ -12,7 +12,7 @@ tape('Dispatcher.wrapDispatch', function (t) {
   t.equal(dispatch({ type: '@@redux/INIT', payload: 'hey' }), 'hey')
 
   // should have saved one action (internal property)
-  t.equal(sb._actions.length, 1)
+  t.equal(sb._updates.length, 1)
 
   t.end()
 })
