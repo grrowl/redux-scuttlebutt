@@ -52,13 +52,13 @@ function connectGossip(scuttlebutt, uri, primusOptions, Primus) {
 
   console.log('[io] connecting...')
 
-  connectStreams(scuttlebutt.io, scuttlebutt.createStream())
+  connectStreams(scuttlebutt.io, () => scuttlebutt.createStream())
 
   return scuttlebutt
 }
 
 // the internet is a series of tubes
-function connectStreams(io, gossip) {
+function connectStreams(io, createStream) {
   // would love to do this. it doesn't work:
   // spark.pipe(docStream).pipe(spark)
 
@@ -68,17 +68,19 @@ function connectStreams(io, gossip) {
     console.debug('delayed connection active', DEBUG_DELAY)
   }
 
+  let gossip
+
   // scuttlebutt uses 'stream', but primus does not, hence the lopsided pipe
 
-  io.on('data', function message(data) {
-    // console.log('[io] <-', data)
-    if (DEBUG_DELAY) {
-      return setTimeout(() => gossip.write(data), DEBUG_DELAY)
-    }
-    gossip.write(data)
-  })
+  // io.on('data', function message(data) {
+  //   // console.log('[io] <-', data)
+  //   if (DEBUG_DELAY) {
+  //     return setTimeout(() => gossip.write(data), DEBUG_DELAY)
+  //   }
+  //   gossip.write(data)
+  // })
 
-  gossip.pipe(io)
+  // gossip.pipe(io)
   // gossip.on('data', (data) => {
   //   // console.log('[io] ->', data)
   //   if (DEBUG_DELAY) {
@@ -91,21 +93,43 @@ function connectStreams(io, gossip) {
 
   io.on('open', () => {
     console.log('[io] connection open')
+
+    // create fresh stream,
+    // discard the old one (hopefullly .destroy()d on 'end')
+    gossip = createStream()
+    gossip.pipe(io)
+
+    io.on('data', function message(data) {
+      // console.log('[io] <-', data)
+      if (DEBUG_DELAY) {
+        return setTimeout(() => gossip.write(data), DEBUG_DELAY)
+      }
+      gossip.write(data)
+    })
+
+    io.on('end', () => {
+      console.log('[io] ended')
+      gossip.end()
+      gossip.destroy()
+    })
+
+    // store stream events
+
+    gossip.on('error', (error) => {
+      console.warn('[gossip] error', error)
+      io.end(undefined, { reconnect: true })
+    })
+
+    // handshake header recieved from a new peer. includes their id and clock info
+    gossip.on('header', (header) => {
+      const { id, clock } = header
+      console.log('[gossip] header', id)
+    })
+
   })
 
   io.on('error', (error) => {
     console.log('[io] error', error)
   })
 
-  // store stream events
-
-  gossip.on('error', (error) => {
-    console.warn('[gossip] error', error)
-  })
-
-  // handshake header recieved from a new peer. includes their id and clock info
-  gossip.on('header', (header) => {
-    const { id, clock } = header
-    console.log('[gossip] header', id)
-  })
 }

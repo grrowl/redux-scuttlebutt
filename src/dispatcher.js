@@ -4,8 +4,9 @@ import * as orderedHistory from './orderedHistory'
 
 import {
   // action constants
-  REWIND_ACTION,
-  RESET_ACTION,
+  UPDATE_TIMESTAMP,
+  UPDATE_SOURCE,
+
   META_TIMESTAMP,
   META_SOURCE
 } from './constants'
@@ -21,7 +22,7 @@ export function isGossipType(type = '') {
 // keep a reference to dispatcher because methods will change over time
 function getDelayedDispatch(dispatcher) {
   if (typeof window === 'undefined'
-    || typeof requestAnimationFrame !== 'function') {
+    || typeof window.requestAnimationFrame !== 'function') {
     return false
   }
 
@@ -47,7 +48,7 @@ function getDelayedDispatch(dispatcher) {
     queue.splice(0, i + 1)
 
     if (queue.length)
-      requestAnimationFrame(drainQueue)
+      window.requestAnimationFrame(drainQueue)
   }
 
   return function delayedDispatch(action) {
@@ -55,7 +56,7 @@ function getDelayedDispatch(dispatcher) {
 
     // on first action, queue dispatching the action queue
     if (queue.length === 1) {
-      requestAnimationFrame(drainQueue)
+      window.requestAnimationFrame(drainQueue)
     }
   }
 }
@@ -74,12 +75,8 @@ export default class Dispatcher extends Scuttlebutt {
       this.options.customDispatch && this.options.customDispatch(this)
 
     // history of all current updates
-    // in-recieved-order is for scuttlebutt, sorted for time travel
+    // timestamp-source-sorted for time travel and replay
     this._updates = []
-    this._updateHistory = []
-
-    // history of store states after each action was applied
-    this._stateHistory = []
 
     // redux methods to wrap
     this._reduxDispatch = () => {
@@ -146,6 +143,12 @@ export default class Dispatcher extends Scuttlebutt {
     // cut down on the amount of time travelling done by all peers), but seems
     // like the de facto for scuttlebutt models
     this._updates.push(update)
+
+    // this could be sped up by only sorting as far as the new update
+    this._updates = this._updates.sort((a, b) => orderedHistory.sort(
+      a[UPDATE_TIMESTAMP], b[UPDATE_TIMESTAMP],
+      a[UPDATE_SOURCE], b[UPDATE_SOURCE]
+    ))
 
     if (this._customDispatch) {
       this._customDispatch(localAction)

@@ -1,8 +1,10 @@
 import {
   META_TIMESTAMP,
+  META_SOURCE,
 
   STATE_ACTION,
   STATE_TIMESTAMP,
+  STATE_SOURCE,
   STATE_SNAPSHOT
 } from './constants'
 
@@ -14,10 +16,19 @@ export const getState = (state) => {
   return lastState && lastState[STATE_SNAPSHOT]
 }
 
+// sort by timestamp, then by source
+export const sort = (t1, t2, s1, s2) => {
+  if (t1 === t2) {
+    return s1 > s2
+  }
+  return t1 > t2
+}
+
 // wrap the root reducer to track history and rewind occasionally
 // currentState is our higher-order form, an array of [snapshot, timestamp]
 export const reducer = (reducer) => (currentState = [], action) => {
   const timestamp = action && action.meta && action.meta[META_TIMESTAMP]
+  const source = action && action.meta && action.meta[META_SOURCE]
   let stateIndex
 
   // this will dispatch an action after the snapshot preceding it, then will
@@ -25,12 +36,14 @@ export const reducer = (reducer) => (currentState = [], action) => {
   // rewind to -1 for "before the start of time"
   for (stateIndex = currentState.length - 1; stateIndex >= -1; stateIndex--) {
     const thisTimestamp = currentState[stateIndex] && currentState[stateIndex][STATE_TIMESTAMP],
+      thisSource = stateIndex === -1 ? undefined : currentState[stateIndex][STATE_SOURCE],
       thisSnapshot = stateIndex === -1 ? undefined : currentState[stateIndex][STATE_SNAPSHOT]
 
     // thisTimestamp will be undefined until the first timestamped action.
     // if this action has no timestamp, we're before the start of time, or,
     // crucially, if this action is newer than the this snapshot
-    if (!timestamp || !thisTimestamp || stateIndex === -1 || timestamp > thisTimestamp) {
+    if (!timestamp || !thisTimestamp || stateIndex === -1
+        || sort(timestamp, thisTimestamp, source, thisSource)) {
       // add to history in the shape [ACTION, TIMESTAMP, SNAPSHOT]
       // splice doesn't perform well, btw.
       currentState.splice(stateIndex + 1, 0, [
@@ -39,6 +52,8 @@ export const reducer = (reducer) => (currentState = [], action) => {
         // in case of missing timestamp, set it to the most previous action's timestamp
         // it'll still be `undefined` for the very first (non-gossip) action (@redux/INIT)
         timestamp || thisTimestamp,
+        // also keep the source for when timestamps are equal (concurrent)
+        source,
         // the result of running this action. we'll return it later.
         reducer(thisSnapshot, action)
       ])
