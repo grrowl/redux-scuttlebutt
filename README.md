@@ -61,6 +61,37 @@ export default (initialState) => {
 It wraps your store's root reducer (to store history), `getState` (to return the
 current state in history) and `dispatch` (to connect to peers).
 
+## options
+
+The store enhancer takes an options object, including the key
+`dispatcherOptions` which is passed directly through to the internal dispatcher:
+
+```js
+scuttlebutt({
+  // uri of a scuttlebutt peer or server
+  uri: 'http://localhost:3000',
+
+  // options for primus.io <https://github.com/primus/primus#getting-started>
+  primusOptions: {},
+
+  // the Primus object, can be switched out with any compatible transport.
+  primus: (typeof window === 'object' && window.Primus),
+
+  // options passed through to the dispatcher
+  dispatcherOptions: {
+
+    // the default will batch-reduce actions by the hundred, firing redux's
+    // subscribe method on the last one, triggering the actual rendering on the
+    // next animationFrame
+    customDispatch: getDelayedDispatch(dispatcher),
+
+    // a function returning true for shared actions, false for private (such
+    // as @@INIT and internal @@scuttlebutt-prefixed action types)
+    isGossipType: isGossipType(actionType),
+  },
+})
+```
+
 ## conflict-free reducers
 
 While `redux-scuttlebutt` facilitates action sharing and enhancing the store,
@@ -97,32 +128,31 @@ scuttlebutt` your example project directory during development.
   [Conway's Game Of Life](https://github.com/grrowl/redux-game-of-life-scuttlebutt)
   multiplayer edition.
 
-## roadmap
+## roadmap and thoughts
 
-one of:
-
-* add message validation on top of our existing scuttlebutt library
-  * is it as simple as adding a secure hash/signature to the message
-* use a different implementation
-  * simple-scuttlebutt is maybe better but wraps it up in a state-based model.
-    unfortunate.
-
-* batch updates which come in "at once"
-  * ala <https://github.com/tappleby/redux-batched-subscribe>
-* garbage collect update and state history beyond the "event horizon" of known
-  source timestamps. New peers would need a state snapshot.
-  * requires snapshot sharing, extending scuttlebutt protocol.
-* recover when invalid actions sequences occur
-  * we currently overwrite history during replay and don't handle recovery of
-    error.
-* allow pluggable socket library/transport
+* message validation on top of our existing scuttlebutt library
+  * robust crypto in the browser comes with a number of performance and security
+    tradeoffs, which we don't want to bake into the library itself.
+  * our recommendation is to implement what's right for your implementation in
+    userland.
+  * i've released an example of message signing with ed25519 signatures and
+    asyncronous message validation
+    [in this gist](https://gist.github.com/grrowl/ca94e47a6da2062e9bd6dad211588597).
+* some comments on our underlying `scuttlebutt` implementation
+* add a `@@scuttlebutt/COMPACTION` action
+  * reducers would recieve the whole history array as `state`
+  * enables removing multiple actions from history which are inconsequential —
+    such as multiple "SET_VALUE" actions, when only the last one applies.
+  * also enables forgetting, and therefore not replaying to other clients,
+    actions after a certain threshold
+* implement CRDT helpers for reducers to easily implement complex shared data
+  types.
 * tests
   * simulate a multi-hop distributed network with delay, ensure consistency
   * ensure rewind/reordering works
   * ensure API
+* allow pluggable socket library/transport
 * more example applications! something real-time, event driven.
-* gossip `_updates` in timestamp order instead of FIFO order
-  * more efficient replaying, better conformity with the protocol.
 
 ## contributions
 
@@ -130,13 +160,13 @@ Contributions very welcomed. **This project is still in its very early,
 experimental stages.**
 
 A major aim of this project is to be able to drop this middleware into an
-existing, compatible project and have it "just work". Additional features
-(timestamp strategy, streams and encryption) should be configurable in
-redux-scuttlebutt itself without messing with the redux application's
+existing, compatible project and have it "just work". Additional features should
+be configurable in redux-scuttlebutt itself or at the highest level of the
+application without heavy modification with the redux application's
 structure/actions/reducers
 
 ## licence
 
 MIT. Without open source projects like React, Redux, Scuttlebutt, and all the
-amazing technology which has been an inspiration for this project, many
-wonderful things in this world wouldn't exist.
+amazing technology which has been the bedrock and inspiration for this project,
+many wonderful things in this world wouldn't exist.
