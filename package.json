@@ -1,6 +1,6 @@
 {
   "name": "redux-scuttlebutt",
-  "version": "0.0.5-alpha.1",
+  "version": "0.2.0",
   "description": "Redux distributed dispatcher",
   "main": "lib/index.js",
   "files": [
@@ -29,7 +29,7 @@
   "dependencies": {
     "lodash": "^4.14.0",
     "primus": "^5.2.2",
-    "scuttlebutt": "github:grrowl/scuttlebutt#32f6702a66ae8e19f25d6b68f81b3b28ebd3c7ee",
+    "scuttlebutt": "github:grrowl/scuttlebutt#logical-timestamps",
     "ws": "^1.1.1"
   },
   "peerDependencies": {

@@ -79,15 +79,16 @@ scuttlebutt({
 
   // options passed through to the dispatcher
   dispatcherOptions: {
-
     // the default will batch-reduce actions by the hundred, firing redux's
     // subscribe method on the last one, triggering the actual rendering on the
-    // next animationFrame
-    customDispatch: getDelayedDispatch(dispatcher),
+    // next animationFrame.
+    // see: https://github.com/grrowl/redux-scuttlebutt/blob/master/src/dispatcher.js#L22
+    customDispatch: getDelayedDispatch, // (dispatcher) => (action) => {}
 
-    // a function returning true for shared actions, false for private (such
-    // as @@INIT and internal @@scuttlebutt-prefixed action types)
-    isGossipType: isGossipType(actionType),
+    // returns whether an action's type should be broadcast to the network.
+    // (returns false for @@INIT and internal @@scuttlebutt-prefixed action
+    // types)
+    isGossipType: isGossipType(actionType), // (actionType) => bool
   },
 })
 ```
@@ -110,6 +111,8 @@ strategies may be,
 * Implement a Conflict-free data type, which only allows certain operations in
   exchange for never conflicting.
   See: https://github.com/pfrazee/crdt_notes#portfolio-of-basic-crdts
+  * We'd love to expose the most useful and common ones from this library to
+    assist with development.
 
 ## example
 
