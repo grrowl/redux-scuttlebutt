@@ -63,6 +63,7 @@ function getDelayedDispatch(dispatcher) {
 
 const defaultOptions = {
   customDispatch: getDelayedDispatch,
+  isGossipType: isGossipType,
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -73,6 +74,8 @@ export default class Dispatcher extends Scuttlebutt {
 
     this._customDispatch =
       this.options.customDispatch && this.options.customDispatch(this)
+
+    this._isGossipType = this.options.isGossipType
 
     // history of all current updates
     // timestamp-source-sorted for time travel and replay
@@ -94,7 +97,7 @@ export default class Dispatcher extends Scuttlebutt {
     return (action) => {
       // apply this action to our scuttlebutt model (and send to peers). It
       // will dispatch, taking care of the the appropriate time ordering
-      if (isGossipType(action.type)) {
+      if (this._isGossipType(action.type)) {
         this.localUpdate(action)
       } else {
         return dispatch(action)

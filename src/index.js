@@ -1,5 +1,4 @@
 import Dispatcher from './dispatcher'
-import { REWIND_ACTION } from './constants'
 
 export { isGossipType } from './dispatcher'
 export { META_SOURCE, META_TIMESTAMP, REWIND_ACTION } from './constants'
