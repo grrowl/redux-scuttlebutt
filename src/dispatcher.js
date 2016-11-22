@@ -148,9 +148,9 @@ export default class Dispatcher extends Scuttlebutt {
     this._updates.push(update)
 
     // this could be sped up by only sorting as far as the new update
-    this._updates = this._updates.sort((a, b) => orderedHistory.sort(
+    this._updates.sort((a, b) => orderedHistory.sort(
       a[UPDATE_TIMESTAMP], b[UPDATE_TIMESTAMP],
-      a[UPDATE_SOURCE], b[UPDATE_SOURCE]
+      a[UPDATE_SOURCE], b[UPDATE_SOURCE],
     ))
 
     if (this._customDispatch) {

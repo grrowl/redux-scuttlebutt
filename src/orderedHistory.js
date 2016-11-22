@@ -19,9 +19,9 @@ export const getState = (state) => {
 // sort by timestamp, then by source
 export const sort = (t1, t2, s1, s2) => {
   if (t1 === t2) {
-    return s1 > s2
+    return ((s1 > s2) ? 1 : -1)
   }
-  return t1 > t2
+  return ((t1 > t2) ? 1 : -1)
 }
 
 // wrap the root reducer to track history and rewind occasionally
@@ -43,7 +43,8 @@ export const reducer = (reducer) => (currentState = [], action) => {
     // if this action has no timestamp, we're before the start of time, or,
     // crucially, if this action is newer than the this snapshot
     if (!timestamp || !thisTimestamp || stateIndex === -1
-        || sort(timestamp, thisTimestamp, source, thisSource)) {
+        || sort(timestamp, thisTimestamp, source, thisSource) > 0) {
+
       // add to history in the shape [ACTION, TIMESTAMP, SNAPSHOT]
       // splice doesn't perform well, btw.
       currentState.splice(stateIndex + 1, 0, [
