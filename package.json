@@ -13,9 +13,7 @@
     "build:umd": "BABEL_ENV=commonjs NODE_ENV=development webpack src/index.js dist/index.js",
     "build:umd:min": "BABEL_ENV=commonjs NODE_ENV=production webpack src/index.js dist/index.min.js",
     "build": "npm run build:commonjs # && npm run build:umd && npm run build:umd:min",
-    "test": "node test",
-    "_test": "NODE_ENV=test mocha --recursive --compilers js:babel-register",
-    "_test:watch": "npm test -- --watch"
+    "test": "node test | tap-spec"
   },
   "repository": {
     "type": "git",
@@ -51,6 +49,7 @@
     "mocha": "^2.2.5",
     "node-libs-browser": "^0.5.2",
     "tap-pessimist": "^1.0.1",
+    "tap-spec": "^4.1.1",
     "tape": "^4.6.0"
   },
   "npmName": "redux-scuttlebutt",
