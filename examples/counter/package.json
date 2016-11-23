@@ -24,7 +24,7 @@
     "react-redux": "^4.2.1",
     "recompose": "^0.20.2",
     "redux": "^3.2.1",
-    "redux-scuttlebutt": "grrowl/redux-scuttlebutt"
+    "redux-scuttlebutt": "^0.2.0"
   },
   "devDependencies": {
     "babel-cli": "^6.10.1",

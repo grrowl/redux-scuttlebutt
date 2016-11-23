@@ -19,11 +19,10 @@
     "primus": "^5.2.2",
     "react": "^0.14.7",
     "react-dom": "^0.14.7",
-    "react-random-bot-avatar": "github:unbracketed/react-random-robot-avatar",
     "react-redux": "^4.2.1",
     "recompose": "^0.20.2",
-    "redux": "^3.2.1",
-    "redux-scuttlebutt": "grrowl/redux-scuttlebutt"
+    "redux": "^3.6.0",
+    "redux-scuttlebutt": "^0.2.0"
   },
   "devDependencies": {
     "babel-cli": "^6.10.1",

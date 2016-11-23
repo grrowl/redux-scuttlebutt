@@ -1,6 +1,6 @@
 {
   "name": "redux-scuttlebutt",
-  "version": "0.2.0-rc.1",
+  "version": "0.2.0",
   "description": "Redux distributed dispatcher",
   "main": "lib/index.js",
   "files": [
@@ -26,13 +26,12 @@
   "homepage": "https://github.com/grrowl/redux-scuttlebutt",
   "dependencies": {
     "lodash": "^4.14.0",
-    "primus": "^5.2.2",
+    "primus": "^6.0.5",
     "scuttlebutt": "github:grrowl/scuttlebutt#logical-timestamps",
-    "tap-spec": "^4.1.1",
     "ws": "^1.1.1"
   },
   "peerDependencies": {
-    "primus": "^5.2.2",
+    "primus": "^6.0.0",
     "redux": "^3.5.2"
   },
   "devDependencies": {
@@ -43,13 +42,9 @@
     "babel-preset-react": "^6.16.0",
     "babel-preset-stage-0": "^6.5.0",
     "babel-register": "^6.9.0",
-    "enzyme": "^2.0.0",
     "eslint-plugin-react": "^6.4.1",
     "expect": "^1.6.0",
     "express": "^4.13.3",
-    "mocha": "^2.2.5",
-    "node-libs-browser": "^0.5.2",
-    "tap-pessimist": "^1.0.1",
     "tap-spec": "^4.1.1",
     "tape": "^4.6.0"
   },
