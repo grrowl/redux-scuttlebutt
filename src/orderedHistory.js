@@ -62,7 +62,7 @@ export const reducer = (reducer) => (currentState = [], action) => {
       // -1 for length to index, -1 for the additional element we just added to the array
       /*
       if (stateIndex !== currentState.length - 2 && typeof window !== 'undefined') {
-        console.log(`time travelled ${timestamp} after ${thisTimestamp} (𝛥${timestamp - thisTimestamp}ms)`)
+        console.log(`time travelled ${timestamp} after ${thisTimestamp} (𝛥${timestamp - thisTimestamp})`)
       }
       */
 
@@ -79,19 +79,7 @@ export const reducer = (reducer) => (currentState = [], action) => {
       lastState = currentState[stateIndex - 1],
       lastSnapshot = lastState ? lastState[STATE_SNAPSHOT] : undefined
 
-    /*
-    * FIXME: very destructive action. if the update fails, we'll have fucked
-    * all the past histories... but surely they can be replayed.
-    * applyUpdate() should dispatch a special "FORGET_ACTION" which removes
-    * our timestamped new action and replays the previously-good state.
-    * this realistically means we're **quietly catching all errors in the
-    * reducer chain**.
-    */
-
-    // update each state snapshot, secretly hoping each action passes
-    // console.log(`-> replaying action ${stateIndex}`,
-    //   thisAction, thisState[STATE_TIMESTAMP], thisAction === action)
-
+    // update each state snapshot
     thisState[STATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
   }
 

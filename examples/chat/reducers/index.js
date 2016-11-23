@@ -11,8 +11,8 @@ export function messages(state = [], action) {
     case 'ADD_MESSAGE':
       return state.concat({
         message: action.payload,
-        source: action.meta[META_SOURCE],
-        timestamp: action.meta[META_TIMESTAMP]
+        source: action.meta && action.meta[META_SOURCE],
+        timestamp: action.meta && action.meta[META_TIMESTAMP]
       })
     default:
       return state

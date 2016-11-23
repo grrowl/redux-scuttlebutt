@@ -28,11 +28,12 @@
     "lodash": "^4.14.0",
     "primus": "^5.2.2",
     "scuttlebutt": "github:grrowl/scuttlebutt#logical-timestamps",
+    "tap-spec": "^4.1.1",
     "ws": "^1.1.1"
   },
   "peerDependencies": {
-    "redux": "^3.5.2",
-    "primus": "^5.2.2"
+    "primus": "^5.2.2",
+    "redux": "^3.5.2"
   },
   "devDependencies": {
     "babel-cli": "^6.10.1",

@@ -25,7 +25,7 @@ export default function scuttlebuttServer(server) {
 
     /*
     // full client statistics
-    console.log('^^^ ' + (new Date()) + ' ^^^')
+    console.log('# ' + (new Date()) + '')
     for (let spark in statistics) {
       console.log(`${spark}: ${statistics[spark].recv} recv ${statistics[spark].sent} sent (${statistics[spark].s})`)
     }
@@ -53,7 +53,7 @@ export default function scuttlebuttServer(server) {
       })()
     ].join(''))
 
-  }, 10000)
+  }, 10000) // max 6/minute
 
   connectRedux(gossip)
 
@@ -67,25 +67,21 @@ export default function scuttlebuttServer(server) {
 
     if (OUTFILE) {
       const gossipReadSteam = gossip.createReadStream()
-      let hasSynced = false
 
       // For some reason, we're not getting any 'sync' events from Dispatcher,
-      // so we'll listen for it in the datastream and write to disk after it.
+      // so we'll listen for it in the datastream and write to disk after it
       // <https://github.com/dominictarr/scuttlebutt#persistence>
 
       gossipReadSteam.on('data', (data) => {
         if (data === '"SYNC"\n') {
-          if (hasSynced) {
-            console.log('📼  Write history (sync) 🚨🚨🚨🚨 RECEIVED MULTIPLE SYNCS')
-          } else {
-            console.log('📼  Writing to ' + OUTFILE)
-            gossipReadSteam.pipe(fs.createWriteStream(OUTFILE))
-            hasSynced = true
-          }
+          console.log('📼  Writing to ' + OUTFILE)
+          gossipReadSteam.pipe(fs.createWriteStream(OUTFILE))
         }
       })
 
+      // this doesn't fire.
       gossip.on('sync', function () {
+        console.log('📼  [NATURAL SYNC] Writing to ' + OUTFILE)
         gossipReadSteam.pipe(fs.createWriteStream(OUTFILE))
       })
 
@@ -104,15 +100,14 @@ export default function scuttlebuttServer(server) {
 
     spark.on('data', function recv(data) {
       // console.log('[io]', spark.id, '<-', data);
-      statistics[spark.id] ? statistics[spark.id].recv++ : console.log(`${spark.id} didn't have recv stats ready?`)
+      statistics[spark.id].recv++
       statisticsDirty = true
-      // statistics[spark.id].recv++
       stream.write(data)
     });
 
     stream.on('data', (data) => {
       // console.log('[io]', spark.id || 'origin', '->', data);
-      statistics[spark.id] ? statistics[spark.id].sent++ : console.log(`${spark.id} didn't have sent stats ready?`)
+      statistics[spark.id].sent++
       statisticsDirty = true
       spark.write(data)
     })
@@ -125,6 +120,8 @@ export default function scuttlebuttServer(server) {
 
   primusServer.on('disconnection', (spark) => {
     statistics[spark.id].s = 'disconnected'
+    statisticsDirty = true
+    // in case you don't want to track zombie connections
     // delete statistics[spark.id]
   })
 
@@ -138,4 +135,5 @@ function connectRedux(gossip) {
 
   // other things we might want to do ->
   // store.subscribe(render)
+  // setInterval(function () { dispatch({ type: 'TICK' }) }, 1000)
 }

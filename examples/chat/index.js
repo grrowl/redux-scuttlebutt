@@ -6,8 +6,8 @@ import counter from './reducers'
 import scuttlebutt from 'redux-scuttlebutt'
 
 const enhancer = compose(
+  applyMiddleware(scuttlebutt),
   window.devToolsExtension ? window.devToolsExtension() : f => f,
-  scuttlebutt(),
 )
 
 const store = createStore(counter, undefined, enhancer)
