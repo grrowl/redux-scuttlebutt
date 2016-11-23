@@ -1,6 +1,6 @@
 require('babel-register')
 
-var dispatcher = require('redux-scuttlebutt/src/server').default
+var dispatcher = require('redux-scuttlebutt/lib/server').default
 
 var webpack = require('webpack')
 var webpackDevMiddleware = require('webpack-dev-middleware')
