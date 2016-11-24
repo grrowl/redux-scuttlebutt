@@ -66,6 +66,7 @@ const defaultOptions = {
   customDispatch: getDelayedDispatch,
   // isGossipType(actionType) => boolean
   isGossipType: isGossipType,
+  //
   filterHistory: false,
 }
 
