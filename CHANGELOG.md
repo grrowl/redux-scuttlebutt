@@ -5,7 +5,7 @@
   relationship with wall-clock time.
   * Updates are now strictly sorted by [timestamp, source].
 * Tests for orderedHistory
-* Stores and replays scuttlebutt updates in timestamp-source order, not recieved order
+* Stores and replays scuttlebutt updates in timestamp-source order, not received order
   * True to the original paper, better in high-latency situations
 * Create new scuttlebutt streams for re-connections
   * Increases reconnection reliability

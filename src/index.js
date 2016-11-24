@@ -1,7 +1,14 @@
 import Dispatcher from './dispatcher'
 
 export { isGossipType } from './dispatcher'
-export { META_SOURCE, META_TIMESTAMP, REWIND_ACTION } from './constants'
+
+export { sortUpdate } from './orderedHistory'
+
+export {
+  META_SOURCE, META_TIMESTAMP,
+  UPDATE_ACTION, UPDATE_TIMESTAMP, UPDATE_SOURCE,
+  REWIND_ACTION
+} from './constants'
 
 
 // Applies default options.

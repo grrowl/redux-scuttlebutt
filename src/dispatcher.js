@@ -20,7 +20,7 @@ export function isGossipType(type = '') {
 // queue a _reduxDispatch call, debounced by animation frame.
 // configurable, but requires use of private methods at the moment
 // keep a reference to dispatcher because methods will change over time
-function getDelayedDispatch(dispatcher) {
+export function getDelayedDispatch(dispatcher) {
   if (typeof window === 'undefined'
     || typeof window.requestAnimationFrame !== 'function') {
     return false
@@ -62,8 +62,11 @@ function getDelayedDispatch(dispatcher) {
 }
 
 const defaultOptions = {
+  // customDispatch(dispatcher) => delayedDispatch(action)
   customDispatch: getDelayedDispatch,
+  // isGossipType(actionType) => boolean
   isGossipType: isGossipType,
+  filterHistory: false,
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -76,6 +79,8 @@ export default class Dispatcher extends Scuttlebutt {
       this.options.customDispatch && this.options.customDispatch(this)
 
     this._isGossipType = this.options.isGossipType
+
+    this._filterHistory = this.options.filterHistory
 
     // history of all current updates
     // timestamp-source-sorted for time travel and replay
@@ -121,6 +126,14 @@ export default class Dispatcher extends Scuttlebutt {
   wrapReducer(reducer) {
     this._historyReducer = orderedHistory.reducer(reducer)
 
+    if (this._filterHistory) {
+      // do the thing below and filter it (a lot. every action on every reduce.
+      // this will be the slowness)
+      return (currentState, action) => {
+        return this._historyReducer(currentState, action).filter(this._filterHistory)
+      }
+    }
+
     // wrap the root reducer to track history and rewind occasionally
     return (currentState, action) => {
       return this._historyReducer(currentState, action)
@@ -148,10 +161,11 @@ export default class Dispatcher extends Scuttlebutt {
     this._updates.push(update)
 
     // this could be sped up by only sorting as far as the new update
-    this._updates.sort((a, b) => orderedHistory.sort(
-      a[UPDATE_TIMESTAMP], b[UPDATE_TIMESTAMP],
-      a[UPDATE_SOURCE], b[UPDATE_SOURCE]
-    ))
+    this._updates.sort(orderedHistory.sort)
+
+    if (this._filterHistory) {
+      this._updates = this._updates.filter(this._filterHistory)
+    }
 
     if (this._customDispatch) {
       this._customDispatch(localAction)

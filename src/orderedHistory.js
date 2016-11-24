@@ -17,6 +17,10 @@ export const getState = (state) => {
 }
 
 // sort by timestamp, then by source
+export const sortUpdate = (u1, u2) => {
+  return sort(u1[STATE_TIMESTAMP], u2[STATE_TIMESTAMP], u1[STATE_SOURCE], u2[STATE_SOURCE])
+}
+
 export const sort = (t1, t2, s1, s2) => {
   if (t1 === t2) {
     return ((s1 > s2) ? 1 : -1)

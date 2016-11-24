@@ -3,10 +3,10 @@ import fs from 'fs'
 const INFILE = process.env['INFILE'],
   OUTFILE = process.env['OUTFILE']
 
-export default function scuttlebuttServer(server) {
+export default function scuttlebuttServer(server, dispatcherOptions) {
   const primusServer = new (require('primus'))(server, {}),
       Dispatcher = require('./dispatcher').default,
-      gossip = new Dispatcher()
+      gossip = new Dispatcher(dispatcherOptions)
 
   const statistics = {}
 
