@@ -69,7 +69,7 @@ The store enhancer takes an options object, including the key
 ```js
 scuttlebutt({
   // uri of a scuttlebutt peer or server
-  uri: 'http://localhost:3000',
+  uri: `${window.location.protocol}//${window.location.host}`,
 
   // options for primus.io <https://github.com/primus/primus#getting-started>
   primusOptions: {},

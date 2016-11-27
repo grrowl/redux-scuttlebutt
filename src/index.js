@@ -13,7 +13,7 @@ export {
 
 // Applies default options.
 const defaultOptions = {
-  uri: 'http://localhost:3000',
+  uri: (typeof window === 'object' && `${window.location.protocol}//${window.location.host}`),
   primusOptions: {},
   primus: (typeof window === 'object' && window.Primus),
   dispatcherOptions: {},
