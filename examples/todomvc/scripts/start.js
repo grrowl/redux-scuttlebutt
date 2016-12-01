@@ -227,7 +227,7 @@ function runDevServer(host, port, protocol) {
     host: host
   });
 
-  dispatcher(devServer);
+  dispatcher(devServer.listeningApp);
 
   // Our custom middleware proxies requests to /index.html or a remote API.
   addMiddleware(devServer);
