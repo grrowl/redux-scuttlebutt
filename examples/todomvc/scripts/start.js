@@ -20,6 +20,9 @@ var prompt = require('react-dev-utils/prompt');
 var config = require('../config/webpack.config.dev');
 var paths = require('../config/paths');
 
+// Scuttlebutt server dispatcher
+var dispatcher = require('redux-scuttlebutt/lib/server').default
+
 // Warn and crash if required files are missing
 if (!checkRequiredFiles([paths.appHtml, paths.appIndexJs])) {
   process.exit(1);
@@ -224,6 +227,8 @@ function runDevServer(host, port, protocol) {
     host: host
   });
 
+  dispatcher(devServer);
+
   // Our custom middleware proxies requests to /index.html or a remote API.
   addMiddleware(devServer);
 
@@ -249,20 +254,4 @@ function run(port) {
 
 // We attempt to use the default port but if it is busy, we offer the user to
 // run on a different port. `detect()` Promise resolves to the next free port.
-detect(DEFAULT_PORT).then(port => {
-  if (port === DEFAULT_PORT) {
-    run(port);
-    return;
-  }
-
-  clearConsole();
-  var question =
-    chalk.yellow('Something is already running on port ' + DEFAULT_PORT + '.') +
-    '\n\nWould you like to run the app on another port instead?';
-
-  prompt(question, true).then(shouldChangePort => {
-    if (shouldChangePort) {
-      run(port);
-    }
-  });
-});
+run(DEFAULT_PORT);
