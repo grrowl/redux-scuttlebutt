@@ -1,6 +1,7 @@
 # 0.2.1
 
-* Add `SECURE_SB` env variable support to the server
+* Adds `SECURE_SB` env variable support to the server, so you can connect and
+  replicate with a remote redux-scuttlebutt
 
 # 0.2.0
 
