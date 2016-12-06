@@ -77,16 +77,16 @@ export default class Dispatcher extends Scuttlebutt {
 
     this._isGossipType = this.options.isGossipType
 
-    // history of all current updates
-    // timestamp-source-sorted for time travel and replay
-    this._updates = []
 
     // redux methods to wrap
     this._reduxDispatch = () => {
       throw new Error('Are you sure you called wrapDispatch?')
     }
     this._reduxGetState = () => {
-      throw new Error('Are you sure you called wrapGetState?')
+      // throw new Error('Are you sure you called wrapGetState?')
+      // this must return a default state for the very first history call,
+      // before .wrapGetState has been applied in the store enhancer.
+      return []
     }
   }
 
@@ -131,44 +131,50 @@ export default class Dispatcher extends Scuttlebutt {
   // implemented for scuttlebutt class
   applyUpdate(update) {
     const [action, timestamp, source] = update,
-      // add our metadata to the action
-      localAction = {
-        ...action,
-        meta: {
-          ...action.meta,
-          [META_TIMESTAMP]: timestamp,
-          [META_SOURCE]: source
+      // copy the object so we can modify its properties later
+      localAction = { meta: {}, ...action },
+      dispatch = (shouldApply) => {
+        if (!shouldApply) {
+          return
+        } else if (this._customDispatch) {
+          this._customDispatch(localAction)
+        } else {
+          this._reduxDispatch(localAction)
         }
       }
 
-    // we log all updates to emit in the order we saw them.
-    // not sure if it's better than replaying in order of timestamp (which might
-    // cut down on the amount of time travelling done by all peers), but seems
-    // like the de facto for scuttlebutt models
-    this._updates.push(update)
+    // add our metadata to the action as non-enumerable properties
+    Object.defineProperty(localAction.meta, META_TIMESTAMP, {
+      enumerable: false,
+      value: timestamp
+    })
+    Object.defineProperty(localAction.meta, META_SOURCE, {
+      enumerable: false,
+      value: source
+    })
 
-    // this could be sped up by only sorting as far as the new update
-    this._updates.sort((a, b) => orderedHistory.sort(
-      a[UPDATE_TIMESTAMP], b[UPDATE_TIMESTAMP],
-      a[UPDATE_SOURCE], b[UPDATE_SOURCE]
-    ))
-
-    if (this._customDispatch) {
-      this._customDispatch(localAction)
-    } else {
-      this._reduxDispatch(localAction)
-    }
+    dispatch(true)
 
     // recieved message succesfully. if false, peers may retry the message.
     return true
   }
 
-  // gossip
+  // reply to gossip with the latest timestamps for the sources we've seen
   // implemented for scuttlebutt class
   history(sources) {
-    return this._updates.filter(function(update) {
-      return filter(update, sources)
-    })
+    // our state (updates[]) has a similar shape to scuttlebutt's own updates.
+    return this._reduxGetState().reduce((arr, update) => {
+      if (
+        update[UPDATE_ACTION]
+        && this._isGossipType(update[UPDATE_ACTION].type)
+        && filter(update, sources)
+      ) {
+        // scuttlebutt only wants ACTION, TIMESTAMP, SOURCE, and not: SNAPSHOT
+        arr.push(update.slice(0, 3))
+      }
+
+      return arr
+    }, [])
   }
 
   // apply an update locally
@@ -185,24 +191,5 @@ export default class Dispatcher extends Scuttlebutt {
       // try our luck
       super.localUpdate(action)
     }
-  }
-
-  // super.localUpdate(this._filterUpdate(action))
-  // Recurse through the value and attempt to prune unserializable leaf objects.
-  // A well-structured app won't be dispatching bad actions like this, so
-  // this might become a dev-only check. also, it's far from foolproof.
-  _filterUpdate(value) {
-    if (typeof value !== 'object')
-      return value
-
-    if (value && value.constructor
-      && /(^Synthetic|Event$)/.test(value.constructor.name))
-      return null
-
-    const result = {}
-    for (const prop in value) {
-      result[prop] = this._filterUpdate(value[prop]);
-    }
-    return result
   }
 }
