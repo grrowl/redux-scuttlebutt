@@ -164,7 +164,8 @@ function connectRedux(gossip) {
   const Redux = require('redux'),
     reducer = (state = [], action) => state.concat(action),
     store = Redux.createStore(gossip.wrapReducer(reducer), undefined),
-    dispatch = gossip.wrapDispatch(store.dispatch)
+    dispatch = gossip.wrapDispatch(store.dispatch),
+    getState = gossip.wrapGetState(store.getState)
 
   // other things we might want to do ->
   // store.subscribe(render)
