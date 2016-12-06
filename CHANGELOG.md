@@ -1,3 +1,6 @@
+# 0.2.1
+
+* Add `SECURE_SB` env variable support to the server
 
 # 0.2.0
 
