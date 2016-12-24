@@ -1,17 +1,8 @@
 import tape from 'tape'
-import { stub, spy } from 'sinon'
+import { spy } from 'sinon'
 
 import Dispatcher from '../src/dispatcher'
 import * as orderedHistory from '../src/orderedHistory'
-
-import { UPDATE_SNAPSHOT } from '../src/constants'
-
-import {
-  META_TIMESTAMP,
-  META_SOURCE,
-  UPDATE_TIMESTAMP,
-  UPDATE_SOURCE,
-} from '../src/constants'
 
 function createAction(payload, type = 'ACTION') {
   return ({

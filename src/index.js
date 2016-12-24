@@ -1,8 +1,10 @@
 import Dispatcher from './dispatcher'
 
 export { isGossipType } from './dispatcher'
-export { META_SOURCE, META_TIMESTAMP, REWIND_ACTION } from './constants'
-
+export {
+  META_SOURCE, META_TIMESTAMP, REWIND_ACTION,
+  UPDATE_ACTION, UPDATE_TIMESTAMP, UPDATE_SOURCE, UPDATE_SNAPSHOT
+} from './constants'
 
 // Applies default options.
 const defaultOptions = {

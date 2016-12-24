@@ -2,18 +2,28 @@ import {
   META_TIMESTAMP,
   META_SOURCE,
 
-  STATE_ACTION,
-  STATE_TIMESTAMP,
-  STATE_SOURCE,
-  STATE_SNAPSHOT
+  UPDATE_ACTION,
+  UPDATE_TIMESTAMP,
+  UPDATE_SOURCE,
+  UPDATE_SNAPSHOT
 } from './constants'
 
+// Formats an initial state
+export const getInitialState = (state) => {
+  if (state !== undefined) {
+    const wrappedState = []
+
+    wrappedState[UPDATE_SNAPSHOT] = state
+
+    return [wrappedState]
+  }
+}
 
 // Returns the state at this point in time
 export const getState = (state) => {
   const lastState = state[state.length - 1]
 
-  return lastState && lastState[STATE_SNAPSHOT]
+  return lastState && lastState[UPDATE_SNAPSHOT]
 }
 
 // sort by timestamp, then by source
@@ -35,9 +45,9 @@ export const reducer = (reducer) => (currentState = [], action) => {
   // replay actions which occurred after it (if any)
   // rewind to -1 for "before the start of time"
   for (stateIndex = currentState.length - 1; stateIndex >= -1; stateIndex--) {
-    const thisTimestamp = currentState[stateIndex] && currentState[stateIndex][STATE_TIMESTAMP],
-      thisSource = stateIndex === -1 ? undefined : currentState[stateIndex][STATE_SOURCE],
-      thisSnapshot = stateIndex === -1 ? undefined : currentState[stateIndex][STATE_SNAPSHOT]
+    const thisTimestamp = currentState[stateIndex] && currentState[stateIndex][UPDATE_TIMESTAMP],
+      thisSource = stateIndex === -1 ? undefined : currentState[stateIndex][UPDATE_SOURCE],
+      thisSnapshot = stateIndex === -1 ? undefined : currentState[stateIndex][UPDATE_SNAPSHOT]
 
     // thisTimestamp will be undefined until the first timestamped action.
     // if this action has no timestamp, we're before the start of time, or,
@@ -75,12 +85,12 @@ export const reducer = (reducer) => (currentState = [], action) => {
   // skip the inserted action (index + 1)
   for (stateIndex = stateIndex + 2; stateIndex < currentState.length; stateIndex++) {
     const thisState = currentState[stateIndex],
-      thisAction = thisState[STATE_ACTION],
+      thisAction = thisState[UPDATE_ACTION],
       lastState = currentState[stateIndex - 1],
-      lastSnapshot = lastState ? lastState[STATE_SNAPSHOT] : undefined
+      lastSnapshot = lastState ? lastState[UPDATE_SNAPSHOT] : undefined
 
     // update each state snapshot
-    thisState[STATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
+    thisState[UPDATE_SNAPSHOT] = reducer(lastSnapshot, thisAction)
   }
 
   // if we're here, the currentState history has been updated
