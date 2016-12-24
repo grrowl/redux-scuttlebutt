@@ -80,6 +80,46 @@ tape('dispatcher.wrapReducer', function (t) {
   t.end()
 })
 
+tape('dispatcher({ verifyAsync })', function (t) {
+  const
+    invalid = ['new', 'yeah'], valid = ['what', 'up'],
+    verifyAsync = (callback, action, getHistory) => {
+      t.ok(Array.isArray(getHistory()), 'getHistory() returns an array')
+
+      setTimeout(() => {
+        // payloads containing 'e' are invalid
+        if (action && action.payload && action.payload.indexOf('e') !== -1) {
+          t.ok(invalid.includes(action.payload), 'invalid action is invalid')
+          callback(false)
+        } else {
+          t.ok(action.payload && valid.includes(action.payload), 'valid action is valid')
+          callback(true)
+        }
+      }, 5)
+    },
+    dispatcher = new Dispatcher({ verifyAsync }),
+    dispatch = spy(),
+    wrappedDispatch = dispatcher.wrapDispatch(dispatch),
+    getState = spy(() => []) // becomes getHistory, returns array
+
+  dispatcher.wrapGetState(getState)
+
+  wrappedDispatch(createAction(invalid[0]))
+  wrappedDispatch(createAction(invalid[1]))
+  wrappedDispatch(createAction(valid[0]))
+  wrappedDispatch(createAction(valid[1]))
+
+  setTimeout(() => {
+    t.ok(dispatch.calledTwice, 'called dispatch twice')
+    // first call
+    t.equal(dispatch.getCall(0).args[0].payload, valid[0], 'called dispatch with valid action 1')
+    // second call
+    t.equal(dispatch.getCall(1).args[0].payload, valid[1], 'called dispatch with valid action 2')
+    t.equal(getState.callCount, 4, 'getState was called for each getHistory')
+    t.end()
+  }, 20)
+})
+
 // dispatcher.applyUpdate - scuttlebutt super, eh
 
 // dispatcher.history - scuttlebutt, history(sources) reduces getState of
@@ -89,5 +129,4 @@ tape('dispatcher.wrapReducer', function (t) {
 // other internals)
 
 // options.customDispatch (ensure signature)
-// options.isGossipType (copy wrapDispatch)
-// options.verifyAsync (ensure behaviour)
+// options.isGossipType (copy wrapDispatch, can't be true for redux init)
