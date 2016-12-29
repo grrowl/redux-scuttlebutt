@@ -63,7 +63,7 @@ function getDelayedDispatch(dispatcher) {
 const defaultOptions = {
   customDispatch: getDelayedDispatch,
   isGossipType: isGossipType,
-  verifyAsync: false,
+  verifyAsync: undefined,
 }
 
 export default class Dispatcher extends Scuttlebutt {

@@ -92,7 +92,7 @@ scuttlebutt({
 
     // if specified, the specified function must call the callback with false or
     // true, depending on whether the action is valid.
-    verifyAsync: false, // (callback, action, getStateHistory) => {}
+    verifyAsync, // (callback, action, getStateHistory) => {}
   },
 })
 ```

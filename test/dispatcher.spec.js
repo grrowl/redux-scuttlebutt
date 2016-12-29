@@ -119,14 +119,3 @@ tape('dispatcher({ verifyAsync })', function (t) {
     t.end()
   }, 20)
 })
-
-// dispatcher.applyUpdate - scuttlebutt super, eh
-
-// dispatcher.history - scuttlebutt, history(sources) reduces getState of
-// gossips and seen actions acoording to sources
-
-// dispatcher.localUpdate - scuttlebutt, calls super.localUpdate (which calls
-// other internals)
-
-// options.customDispatch (ensure signature)
-// options.isGossipType (copy wrapDispatch, can't be true for redux init)
