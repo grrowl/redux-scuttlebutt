@@ -1,3 +1,11 @@
+# 0.3.0
+
+* Internally, we now use the redux history for gossiping with other
+  scuttlebutts, instead of maintaining a separate history.
+* Adds dispatcher option `verifyAsync`. This allows flexible validation of
+  actions.
+* Adds Dispatcher unit tests
+
 # 0.2.1
 
 * Adds `SECURE_SB` env variable support to the server, so you can connect and

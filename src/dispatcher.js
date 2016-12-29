@@ -4,8 +4,7 @@ import * as orderedHistory from './orderedHistory'
 
 import {
   // action constants
-  UPDATE_TIMESTAMP,
-  UPDATE_SOURCE,
+  UPDATE_ACTION,
 
   META_TIMESTAMP,
   META_SOURCE
@@ -64,6 +63,7 @@ function getDelayedDispatch(dispatcher) {
 const defaultOptions = {
   customDispatch: getDelayedDispatch,
   isGossipType: isGossipType,
+  verifyAsync: undefined,
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -77,6 +77,7 @@ export default class Dispatcher extends Scuttlebutt {
 
     this._isGossipType = this.options.isGossipType
 
+    this._verifyAsync = this.options.verifyAsync
 
     // redux methods to wrap
     this._reduxDispatch = () => {
@@ -114,7 +115,7 @@ export default class Dispatcher extends Scuttlebutt {
 
   // wraps the initial state, if any, into the first snapshot
   wrapInitialState(initialState) {
-    return initialState && [,,initialState]
+    return orderedHistory.getInitialState(initialState)
   }
 
   // rewinds history when it changes
@@ -143,17 +144,25 @@ export default class Dispatcher extends Scuttlebutt {
         }
       }
 
-    // add our metadata to the action as non-enumerable properties
+    // add our metadata to the action as non-enumerable properties. This is so
+    // they won't be serialised into JSON when sent over the network to peers in
+    // this.history(), and can be added back by other peers as they receive
+    // them
     Object.defineProperty(localAction.meta, META_TIMESTAMP, {
       enumerable: false,
       value: timestamp
     })
+
     Object.defineProperty(localAction.meta, META_SOURCE, {
       enumerable: false,
       value: source
     })
 
-    dispatch(true)
+    if (this._verifyAsync) {
+      this._verifyAsync(dispatch, localAction, this._reduxGetState)
+    } else {
+      dispatch(true)
+    }
 
     // recieved message succesfully. if false, peers may retry the message.
     return true

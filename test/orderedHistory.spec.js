@@ -1,5 +1,4 @@
 import tape from 'tape'
-import Dispatcher, { REWIND_ACTION } from '../src/dispatcher'
 import { reducer, sort, getState } from '../src/orderedHistory'
 
 import {

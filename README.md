@@ -77,7 +77,7 @@ scuttlebutt({
   // the Primus object, can be switched out with any compatible transport.
   primus: (typeof window === 'object' && window.Primus),
 
-  // options passed through to the dispatcher
+  // options passed through to the dispatcher (and their defaults)
   dispatcherOptions: {
     // the default will batch-reduce actions by the hundred, firing redux's
     // subscribe method on the last one, triggering the actual rendering on the
@@ -88,10 +88,51 @@ scuttlebutt({
     // returns whether an action's type should be broadcast to the network.
     // (returns false for @@INIT and internal @@scuttlebutt-prefixed action
     // types)
-    isGossipType: isGossipType(actionType), // (actionType) => bool
+    isGossipType: isGossipType, // (actionType) => bool
+
+    // if specified, the specified function must call the callback with false or
+    // true, depending on whether the action is valid.
+    verifyAsync, // (callback, action, getStateHistory) => {}
   },
 })
 ```
+
+### verifyAsync
+
+The dispatcher option `verifyAsync` allows you to filter actions dispatched or
+gossiped about through scuttlebutt. You could validate an action's contents
+against a cryptographic signature, or rate limit, or an arbitrary rule:
+
+```js
+import { UPDATE_ACTION } from 'redux-scuttlebutt'
+
+function verifyAsync(callback, action, getStateHistory) {
+  const history = getStateHistory(),
+    prevUpdate = history[history.length - 1],
+    prevAction = prevUpdate && prevUpdate[UPDATE_ACTION]
+
+  if (
+    // if this message doesn't include an e
+    action && action.payload
+      && action.payload.indexOf('e') === -1
+    // and the previously message didn't include an e
+    && prevAction && prevAction && prevAction.payload
+      && prevAction.payload.indexOf('e') === -1
+  ) {
+    callback(false)
+  } else {
+    callback(true)
+  }
+}
+```
+
+The `getStateHistory` parameter returns an array of the form
+`[UPDATE_ACTION, UPDATE_TIMESTAMP, UPDATE_SOURCE, UPDATE_SNAPSHOT]`. These
+`UPDATE_*` constants are exported from scuttlebutt.
+
+Note, if your verification is computationally expensive, you are responsible for
+throttling/delay (like you might for
+[getDelayedDispatch](https://github.com/grrowl/redux-scuttlebutt/blob/4eb737a65e442f388cc1c69c917c8f7b1ee11271/src/dispatcher.js#L23)).
 
 ## conflict-free reducers
 
