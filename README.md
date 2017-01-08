@@ -61,6 +61,10 @@ export default (initialState) => {
 It wraps your store's root reducer (to store history), `getState` (to return the
 current state in history) and `dispatch` (to connect to peers).
 
+If you're using the redux devtools enhancer, it must come *after* the redux-
+scuttlebutt enhancer (or scuttlebutt will try to emit `PERFORM_ACTION` across
+the network)
+
 ## options
 
 The store enhancer takes an options object, including the key
@@ -79,29 +83,43 @@ scuttlebutt({
 
   // options passed through to the dispatcher (and their defaults)
   dispatcherOptions: {
-    // the default will batch-reduce actions by the hundred, firing redux's
-    // subscribe method on the last one, triggering the actual rendering on the
-    // next animationFrame.
-    // see: https://github.com/grrowl/redux-scuttlebutt/blob/master/src/dispatcher.js#L22
-    customDispatch: getDelayedDispatch, // (dispatcher) => (action) => {}
+    customDispatch: function getDelayedDispatch(dispatcher) {
+      return function (action) {
+        // the default will batch-reduce actions by the hundred, firing redux's
+        // subscribe method on the last one, triggering the actual rendering on
+        // the next animationFrame.
+        // see: https://github.com/grrowl/redux-scuttlebutt/blob/master/src/dispatcher.js#L22
+      }
+    },
 
-    // returns whether an action's type should be broadcast to the network.
-    // (returns false for @@INIT and internal @@scuttlebutt-prefixed action
-    // types)
-    isGossipType: isGossipType, // (actionType) => bool
+    isGossipType: function(actionType) {
+      // returns a boolean representing whether an action's type should be
+      // broadcast to the network.
+      // (by default, returns false for actions prefixed with @@, such as @@INIT
+      // and internal @@scuttlebutt-prefixed action types)
+    },
 
-    // if specified, the specified function must call the callback with false or
-    // true, depending on whether the action is valid.
-    verifyAsync, // (callback, action, getStateHistory) => {}
-  },
+    verifyAsync: function(callback, action, getStateHistory) {
+      // if specified, the verifyAsync function must call callback(false) if the
+      // action is invalid, or callback(true) if the action is valid.
+      // getStateHistory() will return an array of ordered updates
+    },
+
+    signAsync: function(callback, action, getStateHistory) {
+      // if specified, the signAsync will be called for every locally dispatched
+      // action. must call callback(action) and can mutate the action if
+      // desired.
+      // getStateHistory() will return an array of ordered updates
+    },
+  }
 })
 ```
 
-### verifyAsync
+### verifyAsync & signAsync
 
-The dispatcher option `verifyAsync` allows you to filter actions dispatched or
-gossiped about through scuttlebutt. You could validate an action's contents
-against a cryptographic signature, or rate limit, or an arbitrary rule:
+The dispatcher option `verifyAsync` allows you to filter remote actions
+dispatched or gossiped about through scuttlebutt. You could validate an action's
+contents against a cryptographic signature, or rate limit, or an arbitrary rule:
 
 ```js
 import { UPDATE_ACTION } from 'redux-scuttlebutt'
