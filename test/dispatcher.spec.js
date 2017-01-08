@@ -150,11 +150,11 @@ tape('dispatcher({ signAsync })', function (t) {
 
     // first call
     t.equal(dispatch.getCall(0).args[0].payload, payloads[0], 'called dispatch with valid action 1')
-    t.equal(dispatch.getCall(0).args[0].signed, payloads[0], 'called dispatch with signed action 1')
+    t.ok(dispatch.getCall(0).args[0].signed, 'called dispatch with signed action 1')
 
     // second call
     t.equal(dispatch.getCall(1).args[0].payload, payloads[1], 'called dispatch with valid action 2')
-    t.equal(dispatch.getCall(1).args[0].signed, payloads[0], 'called dispatch with signed action 2')
+    t.ok(dispatch.getCall(1).args[0].signed, 'called dispatch with signed action 2')
 
     t.equal(getState.callCount, 2, 'getState was called for each getHistory')
     t.end()

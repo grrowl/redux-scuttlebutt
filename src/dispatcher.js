@@ -64,6 +64,7 @@ const defaultOptions = {
   customDispatch: getDelayedDispatch,
   isGossipType: isGossipType,
   verifyAsync: undefined,
+  signAsync: undefined,
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -78,6 +79,7 @@ export default class Dispatcher extends Scuttlebutt {
     this._isGossipType = this.options.isGossipType
 
     this._verifyAsync = this.options.verifyAsync
+    this._signAsync = this.options.signAsync
 
     // redux methods to wrap
     this._reduxDispatch = () => {
@@ -190,14 +192,9 @@ export default class Dispatcher extends Scuttlebutt {
   // we should ensure we don't send objects which will explode JSON.parse here
   // implemented over scuttlebutt class
   localUpdate(action) {
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        super.localUpdate(action)
-      } catch (error) {
-        throw new Error('Scuttlebutt couldn\'t dispatch', error)
-      }
+    if (this._signAsync) {
+      this._signAsync(super.localUpdate.bind(this), action, this._reduxGetState)
     } else {
-      // try our luck
       super.localUpdate(action)
     }
   }
