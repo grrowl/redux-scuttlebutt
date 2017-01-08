@@ -111,11 +111,52 @@ tape('dispatcher({ verifyAsync })', function (t) {
 
   setTimeout(() => {
     t.ok(dispatch.calledTwice, 'called dispatch twice')
+
     // first call
     t.equal(dispatch.getCall(0).args[0].payload, valid[0], 'called dispatch with valid action 1')
+
     // second call
     t.equal(dispatch.getCall(1).args[0].payload, valid[1], 'called dispatch with valid action 2')
+
     t.equal(getState.callCount, 4, 'getState was called for each getHistory')
+    t.end()
+  }, 20)
+})
+
+tape('dispatcher({ signAsync })', function (t) {
+  const
+    payloads = ['what', 'up'],
+    signAsync = (callback, action, getHistory) => {
+      t.ok(Array.isArray(getHistory()), 'getHistory() returns an array')
+
+      setTimeout(() => {
+        // payloads containing 'e' are invalid
+        t.ok(payloads.includes(action.payload), 'payload is in payloads')
+        callback({ ...action, signed: true })
+      }, 5)
+    },
+    dispatcher = new Dispatcher({ signAsync }),
+    dispatch = spy(),
+    wrappedDispatch = dispatcher.wrapDispatch(dispatch),
+    getState = spy(() => []) // becomes getHistory, returns array
+
+  dispatcher.wrapGetState(getState)
+
+  wrappedDispatch(createAction(payloads[0]))
+  wrappedDispatch(createAction(payloads[1]))
+
+  setTimeout(() => {
+    t.ok(dispatch.calledTwice, 'called dispatch twice')
+
+    // first call
+    t.equal(dispatch.getCall(0).args[0].payload, payloads[0], 'called dispatch with valid action 1')
+    t.ok(dispatch.getCall(0).args[0].signed, 'called dispatch with signed action 1')
+
+    // second call
+    t.equal(dispatch.getCall(1).args[0].payload, payloads[1], 'called dispatch with valid action 2')
+    t.ok(dispatch.getCall(1).args[0].signed, 'called dispatch with signed action 2')
+
+    t.equal(getState.callCount, 2, 'getState was called for each getHistory')
     t.end()
   }, 20)
 })
