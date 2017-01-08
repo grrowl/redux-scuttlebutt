@@ -1,3 +1,8 @@
+# 0.3.1
+
+* Adds dispatcher option `signAsync`. This allows flexible signing or other
+  mutation of locally dispatched actions.
+
 # 0.3.0
 
 * Internally, we now use the redux history for gossiping with other
