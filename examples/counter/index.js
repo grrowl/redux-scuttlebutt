@@ -4,11 +4,15 @@ import { createStore, compose, applyMiddleware } from 'redux'
 import Counter from './components/Counter'
 import App from './components/App'
 import counter from './reducers'
-import scuttlebutt from 'redux-scuttlebutt'
+import scuttlebutt, { devToolsStateSanitizer } from 'redux-scuttlebutt'
+
+const devToolsConfig = {
+  stateSanitizer: devToolsStateSanitizer
+}
 
 const enhancer = compose(
   scuttlebutt(),
-  window.devToolsExtension ? window.devToolsExtension() : f => f,
+  window.devToolsExtension ? window.devToolsExtension(devToolsConfig) : f => f,
 )
 
 const store = createStore(counter, undefined, enhancer)

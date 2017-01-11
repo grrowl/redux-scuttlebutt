@@ -134,3 +134,8 @@ function connectStreams(io, createStream) {
   })
 
 }
+
+// devToolsStateSanitizer can be applied to the devToolsExtension
+// as the stateSanitizer to show correctly the store state instead
+// of showing the internal representation of redux-scuttlebutt
+export const devToolsStateSanitizer = (state) => state.slice(-1)[0][3]
