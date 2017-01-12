@@ -1,3 +1,9 @@
+# 0.3.2
+
+* Exports `devToolsStateSanitizer`to better display state in redux dev-tools.
+  Thanks @sanfilippopablo
+* Use new, non-depreciated devtools extension hook. Thanks @zalmoxisus
+
 # 0.3.1
 
 * Adds dispatcher option `signAsync`. This allows flexible signing or other
