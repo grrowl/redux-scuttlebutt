@@ -2,6 +2,35 @@ in the spirit of open source, here's some related thoughts. (newest first)
 
 ----
 
+## verifyAsync against any arbitrary rule
+
+would be cool to have examples like "everyone can only use each letter once",
+although it has race conditions involved. maybe thats a good thing for example?
+although in real life your stores will diverge :O
+
+```js
+import { UPDATE_ACTION } from 'redux-scuttlebutt'
+
+function verifyAsync(callback, action, getStateHistory) {
+  const history = getStateHistory(),
+    prevUpdate = history[history.length - 1],
+    prevAction = prevUpdate && prevUpdate[UPDATE_ACTION]
+
+  if (
+    // if this message doesn't include an e
+    action && action.payload
+      && action.payload.indexOf('e') === -1
+    // and the previously message didn't include an e
+    && prevAction && prevAction && prevAction.payload
+      && prevAction.payload.indexOf('e') === -1
+  ) {
+    callback(false)
+  } else {
+    callback(true)
+  }
+}
+```
+
 ## prior art
 
 Most of my research has been on the technical side, reading papers and looking

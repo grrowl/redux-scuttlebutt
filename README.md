@@ -18,16 +18,17 @@ protocol to share dispatched redux actions among peers, and eventually agree on
 their order in time. As actions from the past arrive, we replay history as if
 they had always existed.
 
-A sample "server" peer is included, which might sync changes to a database,
-write a persistent log, or manage system/world/NPC actors.
+A sample "server" peer is included, which might sync state changes to a
+database, write a persistent log, or manage system/world/NPC actors.
 
-While it works great in a client-server set up, you could upgrade/downgrade to
-peer-to-peer connections, or go offline, and changes sync when you next connect.
+While it works great in a traditional client-server set up, you can flexibly
+upgrade/downgrade to peer-to-peer connections, go offline for minutes or days,
+and changes will sync when you next connect to another scuttlebutt instance.
 
-Note, scuttlebutt does not make any guarantees of security or identity. Peer
-`Bob` is free to lie to `Jane` about `Amy`'s actions. A client-server layout can
-mitigate this risk, and WebSockets over SSL mitigates MITM replacement, but as
-the project matures this will be brought into consideration.
+Note, by default, scuttlebutt itself does not make any guarantees of security or
+identity: peer `Bob` is able to lie to `Jane` about `Amy`'s actions. Security
+guarantees can added using the
+[`signAsync` and `verifyAsync`](#signasync--verifyasync)] dispatcher options.
 
 For more, read the
 [Scuttlebutt paper](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf).
@@ -55,15 +56,14 @@ export default (initialState) => {
     uri: 'http://localhost:3000',
   }))
 }
-
 ```
 
 It wraps your store's root reducer (to store history), `getState` (to return the
 current state in history) and `dispatch` (to connect to peers).
 
-If you're using the redux devtools enhancer, it must come *after* the redux-
-scuttlebutt enhancer (or scuttlebutt will try to emit `PERFORM_ACTION` across
-the network)
+If you're using the redux dev-tools enhancer, it must come *after* the redux-
+scuttlebutt enhancer (or scuttlebutt will emit `PERFORM_ACTION` actions over the
+network).
 
 ## options
 
@@ -115,33 +115,29 @@ scuttlebutt({
 })
 ```
 
-### verifyAsync & signAsync
+### signAsync & verifyAsync
 
-The dispatcher option `verifyAsync` allows you to filter remote actions
-dispatched or gossiped about through scuttlebutt. You could validate an action's
-contents against a cryptographic signature, or rate limit, or an arbitrary rule:
+The dispatcher options `signAsync` and `verifyAsync` allows you to add arbitrary
+metadata to actions as they are dispatched, and filter remote actions which are
+received from peers. This means you can validate any action against itself or
+the redux state, other actions in history, a cryptographic signature, rate
+limit, or any arbitrary rule.
+
+For security, you can use
+[redux-signatures](https://github.com/grrowl/redux-signatures) to add Ed25519
+signatures to your actions. This could be used to
+verify authors in a peering or mesh structure.
 
 ```js
-import { UPDATE_ACTION } from 'redux-scuttlebutt'
+import { Ed25519, verifyAction, signAction } from 'redux-signatures'
 
-function verifyAsync(callback, action, getStateHistory) {
-  const history = getStateHistory(),
-    prevUpdate = history[history.length - 1],
-    prevAction = prevUpdate && prevUpdate[UPDATE_ACTION]
+const identity = new Ed25519()
 
-  if (
-    // if this message doesn't include an e
-    action && action.payload
-      && action.payload.indexOf('e') === -1
-    // and the previously message didn't include an e
-    && prevAction && prevAction && prevAction.payload
-      && prevAction.payload.indexOf('e') === -1
-  ) {
-    callback(false)
-  } else {
-    callback(true)
-  }
-}
+scuttlebutt({
+  uri: 'http://localhost:3000',
+  signAsync: signAction.bind(this, identity),
+  verifyAsync: verifyAction.bind(this, identity),
+}))
 ```
 
 The `getStateHistory` parameter returns an array of the form
@@ -177,11 +173,6 @@ strategies may be,
 
 Examples are found under `examples/`.
 
-<!--
-You may have to `npm link` your redux-scuttlebutt directory and `npm link redux-
-scuttlebutt` your example project directory during development.
--->
-
 * `counter`:
   [redux counter example](https://github.com/reactjs/redux/tree/master/examples/counter)
   with the addition of redux-scuttlebutt.
@@ -197,16 +188,27 @@ scuttlebutt` your example project directory during development.
     tradeoffs, which we don't want to bake into the library itself.
   * our recommendation is to implement what's right for your implementation in
     userland.
-  * i've released an example of message signing with ed25519 signatures and
+  * have released an example of message signing with ed25519 signatures and
     asyncronous message validation
     [in this gist](https://gist.github.com/grrowl/ca94e47a6da2062e9bd6dad211588597).
-* some comments on our underlying `scuttlebutt` implementation
+  * released [redux-signatures](https://github.com/grrowl/redux-signatures)
+    which plugs directly into the dispatcher.
+    * Allows flexible implementation, e.g. in a client-server topology you may
+      only want to use `sign` on the client and `verify` on the server only.
+      This avoids running the most processor intensive part on the clients with
+      no loss of security.
+* underlying `scuttlebutt` implementation
+  * currently depends on our
+    [own scuttlebutt fork](https://github.com/grrowl/scuttlebutt#logical-timestamps),
+    not yet published to npm, I'm not sure if dominictarr wants to accept these
+    changes upstream.
+  * should probably republish as `scuttlebutt-logical`
 * add a `@@scuttlebutt/COMPACTION` action
-  * reducers would recieve the whole history array as `state`
+  * reducers would receive the whole history array as `state`
   * enables removing multiple actions from history which are inconsequential —
     such as multiple "SET_VALUE" actions, when only the last one applies.
   * also enables forgetting, and therefore not replaying to other clients,
-    actions after a certain threshold
+    actions after a certain threshold.
 * implement CRDT helpers for reducers to easily implement complex shared data
   types.
 * tests
@@ -215,6 +217,9 @@ scuttlebutt` your example project directory during development.
   * ensure API
 * allow pluggable socket library/transport
 * more example applications! something real-time, event driven.
+* WebRTC support
+  * Genericize server into websockets and webrtc versions
+  * Write client modules to support either
 
 ## contributions
 
