@@ -27,7 +27,7 @@
   "dependencies": {
     "lodash": "^4.14.0",
     "primus": "^6.0.5",
-    "scuttlebutt": "github:grrowl/scuttlebutt#logical-timestamps",
+    "scuttlebutt-vector": "^6.0.0",
     "ws": "^1.1.1"
   },
   "peerDependencies": {

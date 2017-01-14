@@ -1,5 +1,5 @@
 
-import Scuttlebutt, { filter } from 'scuttlebutt'
+import Scuttlebutt, { filter } from 'scuttlebutt-vector'
 import * as orderedHistory from './orderedHistory'
 
 import {
