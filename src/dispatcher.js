@@ -22,6 +22,7 @@ const defaultOptions = {
   isGossipType: isGossipType,
   verifyAsync: undefined,
   signAsync: undefined,
+  filterGossip: (() => true),
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -37,6 +38,8 @@ export default class Dispatcher extends Scuttlebutt {
 
     this._verifyAsync = this.options.verifyAsync
     this._signAsync = this.options.signAsync
+
+    this._filterGossip = this.options.filterGossip
 
     // redux methods to wrap
     this._reduxDispatch = () => {
@@ -135,6 +138,7 @@ export default class Dispatcher extends Scuttlebutt {
       if (
         update[UPDATE_ACTION]
         && this._isGossipType(update[UPDATE_ACTION].type)
+        && this._filterGossip(update[UPDATE_ACTION].meta)
         && filter(update, sources)
       ) {
         // scuttlebutt only wants ACTION, TIMESTAMP, SOURCE, and not: SNAPSHOT
