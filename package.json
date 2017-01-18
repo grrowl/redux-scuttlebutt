@@ -3,6 +3,9 @@
   "version": "0.3.2",
   "description": "Redux distributed dispatcher",
   "main": "lib/index.js",
+  "engines": {
+    "node": ">=6.0"
+  },
   "files": [
     "dist",
     "lib",
