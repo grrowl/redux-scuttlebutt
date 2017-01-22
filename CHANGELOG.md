@@ -1,3 +1,15 @@
+# 0.3.4
+
+* Adds `server` options `connectRedux` and `getStatistics`
+
+# 0.3.3
+
+* Fixes initialState always being undefined, now uses
+  `orderedHistory.getInitialState`
+* Default `getDelayedDispatch` moved to its own file.
+* Now depends on [`scuttlebutt-vector`](https://github.com/grrowl/scuttlebutt),
+  instead pointing to a github branch.
+
 # 0.3.2
 
 * Exports `devToolsStateSanitizer`to better display state in redux dev-tools.

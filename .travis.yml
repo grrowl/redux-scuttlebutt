@@ -3,8 +3,3 @@ language: node_js
 node_js:
   - 6.0
   - 7.0
-
-# configure notifications (email, IRC, campfire etc)
-# please update this section to your needs!
-notifications:
-  irc: "irc.freenode.org#travis"
