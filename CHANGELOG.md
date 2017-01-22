@@ -1,6 +1,7 @@
-# 0.3.4
+# 0.3.4-0.3.5
 
-* Adds `server` options `connectRedux` and `getStatistics`
+* Adds `server` options `connectRedux`, `getStatistics`, `primusOptions` and
+  `dispatcherOptions`
 
 # 0.3.3
 

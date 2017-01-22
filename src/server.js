@@ -7,18 +7,20 @@ const INFILE = process.env['INFILE'],
 const defaultOptions = {
   connectRedux,
   getStatistics,
+  primusOptions: {},
+  dispatcherOptions: {},
 }
 
 export default function scuttlebuttServer(server, options) {
   options = { ...defaultOptions, ...options }
 
-  const primusServer = new (require('primus'))(server, {}),
+  const primusServer = new (require('primus'))(server, options.primusOptions),
       Dispatcher = require('./dispatcher').default,
-      gossip = new Dispatcher(),
-      onStatistic = getStatistics()
+      gossip = new Dispatcher(options.dispatcherOptions),
+      onStatistic = options.getStatistics()
 
   // connect dispatcher to redux
-  connectRedux(gossip)
+  options.connectRedux(gossip)
 
   // read actions from file
   if (INFILE) {
