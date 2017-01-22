@@ -25,17 +25,18 @@ export default function scuttlebutt(options) {
   return (createStore) => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
-    const scuttlebutt = connectGossip(
-        new Dispatcher(options.dispatcherOptions),
+    const dispatcher = new Dispatcher(options.dispatcherOptions),
+      scuttlebutt = connectGossip(
+        dispatcher,
         options.uri,
         options.primusOptions,
         options.primus
       )
 
-    return (reducer, preloadedState, enhancer) => {
+    return (reducer, initialState, enhancer) => {
       const store = createStore(
         scuttlebutt.wrapReducer(reducer),
-        [[,,preloadedState]], // preloaded state is the earliest snapshot
+        dispatcher.wrapInitialState(initialState), // preloaded state is the earliest snapshot
         enhancer)
 
       return {
