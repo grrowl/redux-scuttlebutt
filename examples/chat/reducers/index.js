@@ -1,5 +1,5 @@
 import { combineReducers } from 'redux'
-import { META_TIMESTAMP, META_SOURCE } from 'redux-scuttlebutt/lib/dispatcher'
+import { META_TIMESTAMP, META_SOURCE } from 'redux-scuttlebutt'
 
 export default combineReducers({
   messages,
@@ -12,7 +12,8 @@ export function messages(state = [], action) {
       return state.concat({
         message: action.payload,
         source: action.meta && action.meta[META_SOURCE],
-        timestamp: action.meta && action.meta[META_TIMESTAMP]
+        timestamp: action.meta.timestamp,
+        id: action.meta && action.meta[META_TIMESTAMP]
       })
     default:
       return state

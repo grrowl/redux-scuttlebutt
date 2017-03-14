@@ -15,13 +15,20 @@ function filterActive(sources) {
 }
 
 export default function App({ store: { dispatch, getState } }) {
-  const { messages, sources } = getState()
+  const { messages, sources } = getState(),
+    createMessage = (payload) => ({
+      type: 'ADD_MESSAGE',
+      payload,
+      meta: {
+        timestamp: (new Date()).toJSON()
+      }
+    })
 
   return (
     <div>
       <MessageInput
         online={ filterActive(sources) }
-        onMessage={(payload) => dispatch({ type: 'ADD_MESSAGE', payload })} />
+        onMessage={ (payload) => dispatch(createMessage(payload)) } />
 
       <hr />
 

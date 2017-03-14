@@ -1,6 +1,6 @@
 {
   "name": "redux-scuttlebutt-chat",
-  "version": "0.0.1-alpha",
+  "version": "0.3.5",
   "description": "redux-scuttlebutt chat example",
   "scripts": {
     "start": "node server"
@@ -22,7 +22,7 @@
     "react-redux": "^4.2.1",
     "recompose": "^0.20.2",
     "redux": "^3.6.0",
-    "redux-scuttlebutt": "^0.2.0"
+    "redux-scuttlebutt": "^0.3.5"
   },
   "devDependencies": {
     "babel-cli": "^6.10.1",

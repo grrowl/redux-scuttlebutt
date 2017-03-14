@@ -10,9 +10,10 @@ const devToolsConfig = {
 }
 
 const enhancer = compose(
-  applyMiddleware(scuttlebutt),
-  window.__REDUX_DEVTOOLS_EXTENSION__ ?
-    window.__REDUX_DEVTOOLS_EXTENSION__(devToolsConfig) : f => f
+  scuttlebutt(),
+  window.__REDUX_DEVTOOLS_EXTENSION__
+    ? window.__REDUX_DEVTOOLS_EXTENSION__(devToolsConfig)
+    : f => f
 )
 
 const store = createStore(counter, undefined, enhancer)
