@@ -27,11 +27,10 @@ and changes will sync when you next connect to another scuttlebutt instance.
 
 Note, by default, scuttlebutt itself does not make any guarantees of security or
 identity: peer `Bob` is able to lie to `Jane` about `Amy`'s actions. Security
-guarantees can added using the
-[`signAsync` and `verifyAsync`](#signasync--verifyasync)] dispatcher options.
+guarantees can added using the [`signAsync` and `verifyAsync`](#signasync--verifyasync)
+dispatcher options.
 
-For more, read the
-[Scuttlebutt paper](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf).
+For more, read the [Scuttlebutt paper](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf).
 
 ## dispatcher
 
@@ -58,12 +57,39 @@ export default (initialState) => {
 }
 ```
 
-It wraps your store's root reducer (to store history), `getState` (to return the
-current state in history) and `dispatch` (to connect to peers).
+It wraps your store's root reducer (to allow us to store history states),
+`getState` (to return the latest history state) and `dispatch` (to dispatch
+locally and to connected peers).
 
-If you're using the redux dev-tools enhancer, it must come *after* the redux-
-scuttlebutt enhancer (or scuttlebutt will emit `PERFORM_ACTION` actions over the
-network).
+Actions which flow through redux-scuttlebutt will have their timestamp and
+source added (as non-enumerable properties) to the action's meta object. These
+keys are available as the exported constants `META_TIMESTAMP` and
+`META_SOURCE`.
+
+Timestamps are logical (not wall-clock based) and are in the format
+`<logical timestamp>-<source>`.
+
+### redux-devtools
+
+If you're using the
+[redux dev-tools enhancer](https://github.com/gaearon/redux-devtools), it must
+come *after* the redux-scuttlebutt enhancer, otherwise connected scuttlebutt
+stores will emit devtools actions instead of your application's. For ease of
+development, we also export `devToolsStateSanitizer` which allows devtools to
+expose your application's internal state (instead of scuttlebutt's):
+
+```js
+import scuttlebutt, { devToolsStateSanitizer } from 'redux-scuttlebutt'
+
+const enhancer = compose(
+  scuttlebutt(),
+  window.__REDUX_DEVTOOLS_EXTENSION__
+    ? window.__REDUX_DEVTOOLS_EXTENSION__({ stateSanitizer: devToolsStateSanitizer })
+    : f => f
+)
+
+createStore(counter, undefined, enhancer)
+```
 
 ## options
 
@@ -140,9 +166,9 @@ scuttlebutt({
 }))
 ```
 
-The `getStateHistory` parameter returns an array of the form
+The `getStateHistory` third parameter returns an array of the form
 `[UPDATE_ACTION, UPDATE_TIMESTAMP, UPDATE_SOURCE, UPDATE_SNAPSHOT]`. These
-`UPDATE_*` constants are exported from scuttlebutt.
+`UPDATE_` constants are exported from scuttlebutt.
 
 Note, if your verification is computationally expensive, you are responsible for
 throttling/delay (like you might for
