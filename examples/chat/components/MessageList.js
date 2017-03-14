@@ -13,7 +13,7 @@ const styles = {
   content: {
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   source: {
     // Hack, but stops flexbox from stretching
