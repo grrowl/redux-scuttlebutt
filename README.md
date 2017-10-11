@@ -1,12 +1,10 @@
 
 # redux-scuttlebutt
 
-<!--
-Self-replicating, self-ordering log of actions shared between all clients.
-Using the power behind redux's hot reloading and time travel, your client
-dispatches actions itself and so does every other client, they share the state,
-and it all just works.
--->
+Self-replicating, self-ordering log of actions shared between peers.
+Using the power of time travel enabled by redux, your application
+dispatches and receives actions between its connected peers, creating an
+eventually consistent shared state.
 
 ## scuttlebutt
 
@@ -14,23 +12,30 @@ and it all just works.
 > — [dominictarr/scuttlebutt](https://github.com/dominictarr/scuttlebutt)
 
 Efficient peer to peer reconciliation. We use it as the underlying
-protocol to share dispatched redux actions among peers, and eventually agree on
-their order in time. As actions from the past arrive, we replay history as if
-they had always existed.
+protocol to share actions among peers, and to eventually agree on
+their logical order. When we encounter actions with a  (one or more
+actions ago), we rewind and replay history in the correct order.
 
-A sample "server" peer is included, which might sync state changes to a
-database, write a persistent log, or manage system/world/NPC actors.
+For more about the protocol, read the 
+[Scuttlebutt paper](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf).
 
-While it works great in a traditional client-server set up, you can flexibly
-upgrade/downgrade to peer-to-peer connections, go offline for minutes or days,
-and changes will sync when you next connect to another scuttlebutt instance.
+## use
+
+Add the store enhancer to your existing redux application and connect to a 
+scuttlebutt peer. Peers will gossip and reconciliate any actions (received 
+or dispatched) with all their connected peers.
+A sample "server" peer is included which could be extended to sync state changes 
+with a database, write a persistent log, or manage system/world/bot actors.
+
+While it works great in a traditional client-server set up, you could flexibly
+upgrade/downgrade to peer-to-peer connections. The protocol supports going offline 
+for any amount of time, and any changes will sync when you next connect to another 
+scuttlebutt instance.
 
 Note, by default, scuttlebutt itself does not make any guarantees of security or
 identity: peer `Bob` is able to lie to `Jane` about `Amy`'s actions. Security
 guarantees can added using the [`signAsync` and `verifyAsync`](#signasync--verifyasync)
 dispatcher options.
-
-For more, read the [Scuttlebutt paper](http://www.cs.cornell.edu/home/rvr/papers/flowgossip.pdf).
 
 ## dispatcher
 
