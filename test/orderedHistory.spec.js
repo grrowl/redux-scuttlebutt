@@ -1,26 +1,20 @@
 import tape from 'tape'
 import { reducer, sort, getState } from '../src/orderedHistory'
 
-import {
-  META_TIMESTAMP,
-  META_SOURCE,
-  UPDATE_TIMESTAMP,
-  UPDATE_SOURCE,
-} from '../src/constants'
+import { META_TIMESTAMP, META_SOURCE, UPDATE_TIMESTAMP, UPDATE_SOURCE } from '../src/constants'
 
 function createAction(payload, timestamp, source) {
-  return ({
+  return {
     type: 'ACTION',
     payload: payload,
     meta: {
       [META_TIMESTAMP]: timestamp,
       [META_SOURCE]: source
     }
-  })
+  }
 }
 
-tape('orderedHistory.sort', function (t) {
-
+tape('orderedHistory.sort', function(t) {
   t.ok(sort(1, 2, 'a', 'b') < 0, 't1 < t2')
 
   t.ok(sort(2, 1, 'a', 'b') > 0, 't2 > t1')
@@ -32,9 +26,10 @@ tape('orderedHistory.sort', function (t) {
   t.end()
 })
 
-tape('orderedHistory.getState', function (t) {
+tape('orderedHistory.getState', function(t) {
   const root = reducer((state, action) => action)
-  var state1 = [], state2 = []
+  var state1 = [],
+    state2 = []
 
   state1 = root(state1, createAction('1a', 1, 'a'))
   state1 = root(state1, createAction('2a', 2, 'a'))
@@ -50,7 +45,7 @@ tape('orderedHistory.getState', function (t) {
   t.end()
 })
 
-tape('orderedHistory.reducer ordering (simple)', function (t) {
+tape('orderedHistory.reducer ordering (simple)', function(t) {
   const root = reducer((state, action) => action)
   let state = []
 
@@ -72,7 +67,7 @@ tape('orderedHistory.reducer ordering (simple)', function (t) {
   t.end()
 })
 
-tape('orderedHistory.reducer ordering (complex)', function (t) {
+tape('orderedHistory.reducer ordering (complex)', function(t) {
   const root = reducer((state = [], action) => [...state, action])
   let state = []
 

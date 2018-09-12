@@ -1,7 +1,6 @@
 import {
   META_TIMESTAMP,
   META_SOURCE,
-
   UPDATE_ACTION,
   UPDATE_TIMESTAMP,
   UPDATE_SOURCE,
@@ -9,7 +8,7 @@ import {
 } from './constants'
 
 // Formats an initial state
-export const getInitialState = (state) => {
+export const getInitialState = state => {
   if (state !== undefined) {
     const wrappedState = []
 
@@ -20,7 +19,7 @@ export const getInitialState = (state) => {
 }
 
 // Returns the state at this point in time
-export const getState = (state) => {
+export const getState = state => {
   const lastState = state[state.length - 1]
 
   return lastState && lastState[UPDATE_SNAPSHOT]
@@ -29,14 +28,14 @@ export const getState = (state) => {
 // sort by timestamp, then by source
 export const sort = (t1, t2, s1, s2) => {
   if (t1 === t2) {
-    return ((s1 > s2) ? 1 : -1)
+    return s1 > s2 ? 1 : -1
   }
-  return ((t1 > t2) ? 1 : -1)
+  return t1 > t2 ? 1 : -1
 }
 
 // wrap the root reducer to track history and rewind occasionally
 // currentState is our higher-order form, an array of [snapshot, timestamp]
-export const reducer = (reducer) => (currentState = [], action) => {
+export const reducer = reducer => (currentState = [], action) => {
   const timestamp = action && action.meta && action.meta[META_TIMESTAMP]
   const source = action && action.meta && action.meta[META_SOURCE]
   let stateIndex
@@ -52,9 +51,12 @@ export const reducer = (reducer) => (currentState = [], action) => {
     // thisTimestamp will be undefined until the first timestamped action.
     // if this action has no timestamp, we're before the start of time, or,
     // crucially, if this action is newer than the this snapshot
-    if (!timestamp || !thisTimestamp || stateIndex === -1
-        || sort(timestamp, thisTimestamp, source, thisSource) > 0) {
-
+    if (
+      !timestamp ||
+      !thisTimestamp ||
+      stateIndex === -1 ||
+      sort(timestamp, thisTimestamp, source, thisSource) > 0
+    ) {
       // add to history in the shape [ACTION, TIMESTAMP, SNAPSHOT]
       // splice doesn't perform well, btw.
       currentState.splice(stateIndex + 1, 0, [

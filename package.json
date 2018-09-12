@@ -16,6 +16,7 @@
     "build:umd": "BABEL_ENV=commonjs NODE_ENV=development webpack src/index.js dist/index.js",
     "build:umd:min": "BABEL_ENV=commonjs NODE_ENV=production webpack src/index.js dist/index.min.js",
     "build": "npm run build:commonjs # && npm run build:umd && npm run build:umd:min",
+    "dev": "BABEL_ENV=commonjs babel src --out-dir lib --watch",
     "test": "node test | tap-spec"
   },
   "repository": {

@@ -5,13 +5,13 @@ import Dispatcher from '../src/dispatcher'
 import * as orderedHistory from '../src/orderedHistory'
 
 function createAction(payload, type = 'ACTION') {
-  return ({
+  return {
     type,
-    payload: payload,
-  })
+    payload: payload
+  }
 }
 
-tape('dispatcher.wrapDispatch', function (t) {
+tape('dispatcher.wrapDispatch', function(t) {
   const dispatcher = new Dispatcher(),
     dispatch = spy(),
     wrappedDispatch = dispatcher.wrapDispatch(dispatch)
@@ -35,7 +35,7 @@ tape('dispatcher.wrapDispatch', function (t) {
   t.end()
 })
 
-tape('dispatcher.wrapGetState (initialState)', function (t) {
+tape('dispatcher.wrapGetState (initialState)', function(t) {
   const dispatcher = new Dispatcher(),
     getState = () => orderedHistory.getInitialState(42)
 
@@ -46,14 +46,14 @@ tape('dispatcher.wrapGetState (initialState)', function (t) {
 
   t.ok(orderedHistory.getState.calledOnce, 'orderedHistory.getState called')
 
-  orderedHistory.getState.restore();
+  orderedHistory.getState.restore()
 
   t.end()
 })
 
-tape('dispatcher.wrapInitialState', function (t) {
+tape('dispatcher.wrapInitialState', function(t) {
   const dispatcher = new Dispatcher(),
-    initialState = { 'favs': 'dogs' },
+    initialState = { favs: 'dogs' },
     state = dispatcher.wrapInitialState(initialState)
 
   t.ok(orderedHistory.getState(state), 'getState is ok')
@@ -62,9 +62,9 @@ tape('dispatcher.wrapInitialState', function (t) {
   t.end()
 })
 
-tape('dispatcher.wrapReducer', function (t) {
+tape('dispatcher.wrapReducer', function(t) {
   const dispatcher = new Dispatcher(),
-    rootReducer = spy((state = [], action) => [ ...state, action.payload]),
+    rootReducer = spy((state = [], action) => [...state, action.payload]),
     reducer = dispatcher.wrapReducer(rootReducer)
 
   let state = dispatcher.wrapInitialState(['hey'])
@@ -80,9 +80,9 @@ tape('dispatcher.wrapReducer', function (t) {
   t.end()
 })
 
-tape('dispatcher({ verifyAsync })', function (t) {
-  const
-    invalid = ['new', 'yeah'], valid = ['what', 'up'],
+tape('dispatcher({ verifyAsync })', function(t) {
+  const invalid = ['new', 'yeah'],
+    valid = ['what', 'up'],
     verifyAsync = (callback, action, getHistory) => {
       t.ok(Array.isArray(getHistory()), 'getHistory() returns an array')
 
@@ -123,9 +123,8 @@ tape('dispatcher({ verifyAsync })', function (t) {
   }, 20)
 })
 
-tape('dispatcher({ signAsync })', function (t) {
-  const
-    payloads = ['what', 'up'],
+tape('dispatcher({ signAsync })', function(t) {
+  const payloads = ['what', 'up'],
     signAsync = (callback, action, getHistory) => {
       t.ok(Array.isArray(getHistory()), 'getHistory() returns an array')
 

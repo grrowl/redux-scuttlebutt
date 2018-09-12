@@ -2,8 +2,7 @@
 // configurable, but requires use of private methods at the moment
 // keep a reference to dispatcher because methods will change over time
 export default function getDelayedDispatch(dispatcher) {
-  if (typeof window === 'undefined'
-    || typeof window.requestAnimationFrame !== 'function') {
+  if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
     return false
   }
 
@@ -13,7 +12,7 @@ export default function getDelayedDispatch(dispatcher) {
     let state = dispatcher._reduxGetState(),
       i
 
-    for (i = 0; i < 100 && (i <= queue.length - 1); i++) {
+    for (i = 0; i < 100 && i <= queue.length - 1; i++) {
       // for-real dispatch the last action, triggering redux's subscribe
       // (and thus UI re-renders). This prioritises crunching data over
       // feedback, but potentially we should dispatch perodically, even
@@ -28,8 +27,7 @@ export default function getDelayedDispatch(dispatcher) {
     // reset the queue
     queue.splice(0, i + 1)
 
-    if (queue.length)
-      window.requestAnimationFrame(drainQueue)
+    if (queue.length) window.requestAnimationFrame(drainQueue)
   }
 
   return function delayedDispatch(action) {

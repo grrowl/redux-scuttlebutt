@@ -1,4 +1,3 @@
-
 import Scuttlebutt, { filter } from 'scuttlebutt-vector'
 import * as orderedHistory from './orderedHistory'
 import getDelayedDispatch from './getDelayedDispatch'
@@ -6,7 +5,6 @@ import getDelayedDispatch from './getDelayedDispatch'
 import {
   // action constants
   UPDATE_ACTION,
-
   META_TIMESTAMP,
   META_SOURCE
 } from './constants'
@@ -21,7 +19,7 @@ const defaultOptions = {
   customDispatch: getDelayedDispatch,
   isGossipType: isGossipType,
   verifyAsync: undefined,
-  signAsync: undefined,
+  signAsync: undefined
 }
 
 export default class Dispatcher extends Scuttlebutt {
@@ -30,8 +28,7 @@ export default class Dispatcher extends Scuttlebutt {
 
     this.options = { ...defaultOptions, ...options }
 
-    this._customDispatch =
-      this.options.customDispatch && this.options.customDispatch(this)
+    this._customDispatch = this.options.customDispatch && this.options.customDispatch(this)
 
     this._isGossipType = this.options.isGossipType
 
@@ -54,7 +51,7 @@ export default class Dispatcher extends Scuttlebutt {
   wrapDispatch(dispatch) {
     this._reduxDispatch = dispatch
 
-    return (action) => {
+    return action => {
       // apply this action to our scuttlebutt model (and send to peers). It
       // will dispatch, taking care of the the appropriate time ordering
       if (this._isGossipType(action.type)) {
@@ -93,7 +90,7 @@ export default class Dispatcher extends Scuttlebutt {
     const [action, timestamp, source] = update,
       // copy the object so we can modify its properties later
       localAction = { meta: {}, ...action },
-      dispatch = (shouldApply) => {
+      dispatch = shouldApply => {
         if (!shouldApply) {
           return
         } else if (this._customDispatch) {
@@ -133,9 +130,9 @@ export default class Dispatcher extends Scuttlebutt {
     // our state (updates[]) has a similar shape to scuttlebutt's own updates.
     return this._reduxGetState().reduce((arr, update) => {
       if (
-        update[UPDATE_ACTION]
-        && this._isGossipType(update[UPDATE_ACTION].type)
-        && filter(update, sources)
+        update[UPDATE_ACTION] &&
+        this._isGossipType(update[UPDATE_ACTION].type) &&
+        filter(update, sources)
       ) {
         // scuttlebutt only wants ACTION, TIMESTAMP, SOURCE, and not: SNAPSHOT
         arr.push(update.slice(0, 3))

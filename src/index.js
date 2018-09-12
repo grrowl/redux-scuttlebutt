@@ -3,16 +3,21 @@ import { UPDATE_SNAPSHOT } from './constants'
 
 export { isGossipType } from './dispatcher'
 export {
-  META_SOURCE, META_TIMESTAMP, REWIND_ACTION,
-  UPDATE_ACTION, UPDATE_TIMESTAMP, UPDATE_SOURCE, UPDATE_SNAPSHOT
+  META_SOURCE,
+  META_TIMESTAMP,
+  REWIND_ACTION,
+  UPDATE_ACTION,
+  UPDATE_TIMESTAMP,
+  UPDATE_SOURCE,
+  UPDATE_SNAPSHOT
 } from './constants'
 
 // Applies default options.
 const defaultOptions = {
-  uri: (typeof window === 'object' && `${window.location.protocol}//${window.location.host}`),
+  uri: typeof window === 'object' && `${window.location.protocol}//${window.location.host}`,
   primusOptions: {},
-  primus: (typeof window === 'object' && window.Primus),
-  dispatcherOptions: {},
+  primus: typeof window === 'object' && window.Primus,
+  dispatcherOptions: {}
 }
 
 // Store enhancer
@@ -22,28 +27,24 @@ const defaultOptions = {
 export default function scuttlebutt(options) {
   options = { ...defaultOptions, ...options }
 
-  return (createStore) => {
+  return createStore => {
     // is it more efficient to store previous states, or replay a bunch of
     // previous actions? (until we have COMMIT checkpointing, the former)
     const dispatcher = new Dispatcher(options.dispatcherOptions),
-      scuttlebutt = connectGossip(
-        dispatcher,
-        options.uri,
-        options.primusOptions,
-        options.primus
-      )
+      scuttlebutt = connectGossip(dispatcher, options.uri, options.primusOptions, options.primus)
 
     return (reducer, initialState, enhancer) => {
       const store = createStore(
         scuttlebutt.wrapReducer(reducer),
         dispatcher.wrapInitialState(initialState), // preloaded state is the earliest snapshot
-        enhancer)
+        enhancer
+      )
 
       return {
         ...store,
         scuttlebutt,
         dispatch: scuttlebutt.wrapDispatch(store.dispatch),
-        getState: scuttlebutt.wrapGetState(store.getState),
+        getState: scuttlebutt.wrapGetState(store.getState)
       }
     }
   }
@@ -51,7 +52,10 @@ export default function scuttlebutt(options) {
 
 // initialise network io
 function connectGossip(scuttlebutt, uri, primusOptions, Primus) {
-  scuttlebutt.io = Primus.connect(uri, primusOptions)
+  scuttlebutt.io = Primus.connect(
+    uri,
+    primusOptions
+  )
 
   console.log('[io] connecting...')
 
@@ -118,26 +122,24 @@ function connectStreams(io, createStream) {
 
     // store stream events
 
-    gossip.on('error', (error) => {
+    gossip.on('error', error => {
       console.warn('[gossip] error', error)
       io.end(undefined, { reconnect: true })
     })
 
     // handshake header recieved from a new peer. includes their id and clock info
-    gossip.on('header', (header) => {
+    gossip.on('header', header => {
       const { id, clock } = header
       console.log('[gossip] header', id)
     })
-
   })
 
-  io.on('error', (error) => {
+  io.on('error', error => {
     console.log('[io] error', error)
   })
-
 }
 
 // devToolsStateSanitizer can be applied to the devToolsExtension
 // as the stateSanitizer to show correctly the store state instead
 // of showing the internal representation of redux-scuttlebutt
-export const devToolsStateSanitizer = (state) => state.slice(-1)[0][UPDATE_SNAPSHOT]
+export const devToolsStateSanitizer = state => state.slice(-1)[0][UPDATE_SNAPSHOT]
